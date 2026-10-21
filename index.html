@@ -1,0 +1,3901 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hexin | Loading Terrain... Welcome to My World</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Noto+Serif+SC:wght@300;400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #040508;
+      --text-primary: #f8fafc;
+      --accent-mc: #5c9e31;
+      --mouse-x: 50%;
+      --mouse-y: 50%;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    code, pre, .selectable {
+      user-select: text;
+    }
+
+    body {
+      background-color: #040508;
+      color: #f8fafc;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      overflow-x: hidden;
+      transition: background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1s ease;
+    }
+
+    .font-pixel {
+      font-family: 'Press Start 2P', 'JetBrains Mono', monospace;
+      letter-spacing: 0.04em;
+    }
+
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .font-serif-cn {
+      font-family: 'Noto Serif SC', serif;
+    }
+
+    .font-editorial {
+      font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+    }
+
+    .pixelated {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* Ambient Mouse Spotlight */
+    .cursor-spotlight {
+      background: radial-gradient(
+        800px circle at var(--mouse-x) var(--mouse-y),
+        rgba(126, 200, 80, 0.07),
+        rgba(56, 189, 248, 0.035) 40%,
+        transparent 75%
+      );
+    }
+
+    /* Cinematic Vignette & Film Grain */
+    .cinema-vignette {
+      box-shadow: inset 0 0 140px rgba(0, 0, 0, 0.85);
+    }
+
+    /* Blinking cursor and loading bars */
+    @keyframes pixelBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0.15; }
+    }
+
+    .animate-pixel-blink {
+      animation: pixelBlink 1.05s infinite;
+    }
+
+    @keyframes pulseSlow {
+      0%, 100% { opacity: 0.92; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.985); }
+    }
+
+    .animate-pulse-slow {
+      animation: pulseSlow 2.8s ease-in-out infinite;
+    }
+
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .animate-float {
+      animation: floatSlow 4.5s ease-in-out infinite;
+    }
+
+    @keyframes spinDisc {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .disc-spinning {
+      animation: spinDisc 5.5s linear infinite;
+    }
+
+    /* Lawted-style theatrical scroll choreography */
+    .story-beat {
+      opacity: 0.04;
+      filter: blur(8px);
+      transform: translateY(44px) scale(0.975);
+      transition:
+        opacity 1.15s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 1.15s cubic-bezier(0.16, 1, 0.3, 1),
+        filter 1.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .story-beat.in-view {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateY(0) scale(1);
+    }
+
+    /* Act III Paused Desaturation Filter */
+    body.chapter-paused-mode {
+      background-color: #0b0c0e !important;
+      filter: saturate(0.15) contrast(1.08);
+    }
+
+    .paused-scanlines {
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(255, 255, 255, 0.02) 3px,
+        rgba(0, 0, 0, 0.28) 4px
+      );
+    }
+
+    /* 3D Isometric Grass Cube in Act II */
+    .cube-scene {
+      width: 76px;
+      height: 76px;
+      perspective: 450px;
+    }
+
+    .mc-cube-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(-24deg) rotateY(38deg);
+      animation: rotateCubeSlow 14s linear infinite;
+    }
+
+    @keyframes rotateCubeSlow {
+      0% { transform: rotateX(-24deg) rotateY(0deg); }
+      100% { transform: rotateX(-24deg) rotateY(360deg); }
+    }
+
+    .mc-cube-face {
+      position: absolute;
+      width: 76px;
+      height: 76px;
+      border: 2px solid rgba(0, 0, 0, 0.4);
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35);
+    }
+
+    .mc-cube-top {
+      background: linear-gradient(135deg, #7ec850 0%, #5c9e31 100%);
+      transform: rotateX(90deg) translateZ(38px);
+    }
+    .mc-cube-bottom {
+      background: #5c402b;
+      transform: rotateX(-90deg) translateZ(38px);
+    }
+    .mc-cube-front {
+      background: linear-gradient(to bottom, #5c9e31 0%, #5c9e31 26%, #866043 26%, #735136 100%);
+      transform: rotateY(0deg) translateZ(38px);
+    }
+    .mc-cube-back {
+      background: linear-gradient(to bottom, #4e8a27 0%, #4e8a27 26%, #735136 26%, #5c402b 100%);
+      transform: rotateY(180deg) translateZ(38px);
+    }
+    .mc-cube-right {
+      background: linear-gradient(to bottom, #6ab03c 0%, #6ab03c 26%, #866043 26%, #63442c 100%);
+      transform: rotateY(90deg) translateZ(38px);
+    }
+    .mc-cube-left {
+      background: linear-gradient(to bottom, #4e8a27 0%, #4e8a27 26%, #735136 26%, #5c402b 100%);
+      transform: rotateY(-90deg) translateZ(38px);
+    }
+
+    /* 3D Pixel Wooden Door Scene (Fixed Z-Ordering & Portal Zoom) */
+    .door-perspective-stage {
+      perspective: 1600px;
+      transform-style: preserve-3d;
+    }
+
+    .door-frame-assembly {
+      transition: transform 1.35s cubic-bezier(0.19, 1, 0.22, 1), opacity 1.15s ease;
+      transform-style: preserve-3d;
+    }
+
+    .door-frame-assembly.portal-zoomed-in {
+      transform: scale(1.28) translateZ(120px);
+      pointer-events: none;
+    }
+
+    .pixel-door-leaf {
+      transform-origin: left center;
+      transform-style: preserve-3d;
+      transition: transform 1.35s cubic-bezier(0.19, 1, 0.22, 1), box-shadow 1.35s ease;
+      will-change: transform;
+      box-shadow: inset 0 0 0 2px #3b2311, 0 20px 50px rgba(0, 0, 0, 0.85);
+    }
+
+    .pixel-door-leaf.door-is-open {
+      transform: rotateY(-112deg);
+      box-shadow: -15px 10px 45px rgba(0, 0, 0, 0.65);
+    }
+
+    /* Language Mode Filtering (bilingual / zh / en) */
+    body[data-lang-mode="zh"] .lang-en-only {
+      display: none !important;
+    }
+    body[data-lang-mode="en"] .lang-zh-only {
+      display: none !important;
+    }
+
+    @keyframes doorKnockShake {
+      0%, 100% { transform: rotateY(0deg) translateX(0); }
+      20% { transform: rotateY(-6deg) translateX(-2px) scale(0.99); }
+      40% { transform: rotateY(3.5deg) translateX(2px) scale(1.01); }
+      60% { transform: rotateY(-3.5deg) translateX(-1px); }
+      80% { transform: rotateY(1.5deg) translateX(1px); }
+    }
+
+    .pixel-door-leaf.door-knocking {
+      animation: doorKnockShake 0.36s ease-in-out;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #040508;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #5c9e31;
+    }
+
+    /* Minecraft dirt texture pattern */
+    .mc-dirt-bg {
+      background-color: #1f140d;
+      background-image: 
+        radial-gradient(#332115 15%, transparent 16%),
+        radial-gradient(#140d08 15%, transparent 16%);
+      background-size: 16px 16px;
+      background-position: 0 0, 8px 8px;
+    }
+
+    /* Ultra-Luxury Glassmorphic Cards with 3D Interactive Tilt Support */
+    .luxury-glass {
+      background: linear-gradient(155deg, rgba(20, 22, 29, 0.72) 0%, rgba(8, 9, 14, 0.86) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow:
+        0 28px 70px -18px rgba(0, 0, 0, 0.82),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+      transition: transform 0.25s ease-out, border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .tilt-card {
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .glow-green {
+      box-shadow: 0 25px 60px -15px rgba(92, 158, 49, 0.28), inset 0 1px 0 0 rgba(126, 200, 80, 0.22);
+    }
+    .glow-amber {
+      box-shadow: 0 25px 60px -15px rgba(245, 158, 11, 0.25), inset 0 1px 0 0 rgba(251, 191, 36, 0.22);
+    }
+    .glow-cyan {
+      box-shadow: 0 25px 60px -15px rgba(56, 189, 248, 0.28), inset 0 1px 0 0 rgba(125, 211, 252, 0.22);
+    }
+
+    /* Audio visualizer bars */
+    @keyframes eqBar1 { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+    @keyframes eqBar2 { 0%, 100% { height: 13px; } 33% { height: 5px; } 66% { height: 15px; } }
+    @keyframes eqBar3 { 0%, 100% { height: 6px; } 40% { height: 16px; } 80% { height: 7px; } }
+
+    .eq-playing .bar-1 { animation: eqBar1 0.8s ease-in-out infinite; }
+    .eq-playing .bar-2 { animation: eqBar2 0.65s ease-in-out infinite; }
+    .eq-playing .bar-3 { animation: eqBar3 0.9s ease-in-out infinite; }
+    .eq-playing .bar-4 { animation: eqBar1 0.72s ease-in-out infinite reverse; }
+
+    /* 2010 Weathered Desk & Old Desktop PC Intro Stage */
+    #retro-pc-boot-overlay {
+      background: radial-gradient(circle at 50% 42%, #1a1612 0%, #090807 65%, #020203 100%);
+      transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1), transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #retro-pc-boot-overlay.boot-entered {
+      opacity: 0;
+      transform: scale(1.38);
+      pointer-events: none;
+    }
+
+    /* Old beige CRT monitor casing with yellowing plastic & scratches */
+    .old-crt-casing {
+      background: linear-gradient(145deg, #d6ceb8 0%, #b8ae93 55%, #8f856b 100%);
+      border: 4px solid #6e654f;
+      box-shadow:
+        0 25px 60px rgba(0, 0, 0, 0.9),
+        inset 2px 2px 0 rgba(255, 255, 255, 0.35),
+        inset -4px -4px 8px rgba(0, 0, 0, 0.45);
+    }
+
+    /* CRT glass screen curvature & scanlines */
+    .crt-glass-screen {
+      background-color: #080b09;
+      box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.95);
+      background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.03) 0px,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.35) 3px
+      );
+    }
+
+    /* Weathered scratched wooden desk surface */
+    .weathered-desk-surface {
+      background: linear-gradient(180deg, #4a3221 0%, #362214 45%, #24150b 100%);
+      border-top: 4px solid #63442d;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8), inset 0 4px 12px rgba(0, 0, 0, 0.6);
+    }
+
+    @keyframes crtFlickerOn {
+      0% { transform: scaleY(0.015) scaleX(0.1); opacity: 0.2; filter: brightness(8); }
+      35% { transform: scaleY(0.02) scaleX(1); opacity: 1; filter: brightness(5); }
+      70% { transform: scaleY(1.02) scaleX(1); filter: brightness(1.8); }
+      100% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+    }
+
+    .crt-turning-on {
+      animation: crtFlickerOn 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Giant Editorial Background Watermark */
+    .chapter-watermark {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(5rem, 16vw, 13rem);
+      line-height: 0.85;
+      letter-spacing: -0.04em;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255, 255, 255, 0.055);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="relative min-h-screen selection:bg-emerald-500/30 selection:text-emerald-200 pb-28">
+
+  <!-- Official C418 - Subwoofer Lullaby Audio Stream (with seamless Web Audio C418 score fallback) -->
+  <audio id="official-subwoofer-audio" preload="auto" loop crossorigin="anonymous" class="hidden">
+    <source src="https://archive.org/download/subwoofer-lullaby-vinyl/Subwoofer%20Lullaby.mp3" type="audio/mpeg" />
+    <source src="https://archive.org/download/minecraft-volume-alpha/03%20-%20Subwoofer%20Lullaby.mp3" type="audio/mpeg" />
+  </audio>
+
+  <!-- =====================================================================
+       OPENING GATEWAY: 2010 WEATHERED DESK & OLD DESKTOP PC BOOT SCENE
+       (“开门先来一个破桌子然后上面有个破的台式机，然后启动才能进来这个世界”)
+       ===================================================================== -->
+  <div id="retro-pc-boot-overlay" class="fixed inset-0 z-[60] flex flex-col items-center justify-between px-4 pt-10 pb-0 overflow-hidden select-none">
+    <!-- Top Subtle Room Context & Skip/Replay Bar -->
+    <div class="w-full max-w-4xl flex items-center justify-between text-xs font-mono-code text-zinc-400 z-20">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        <span>SCENE 00 · 2010 SUMMER BEDROOM · 一张破木桌与那台嗡嗡响的旧台式机</span>
+      </div>
+      <button id="skip-boot-overlay-btn" type="button" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white transition-colors">
+        直接进入世界 →
+      </button>
+    </div>
+
+    <!-- Center: Old Desktop Monitor + Weathered Beige Tower Case on the Desk -->
+    <div class="relative z-10 flex flex-col items-center justify-end w-full max-w-4xl mt-auto">
+      <div class="flex flex-col md:flex-row items-center md:items-end justify-center gap-6 w-full px-4">
+
+        <!-- Bulky CRT Monitor -->
+        <div class=" flex flex-col items-center">
+          <div id="old-pc-monitor-box" class="old-crt-casing w-[310px] sm:w-[430px] h-[250px] sm:h-[320px] rounded-2xl p-4 sm:p-6 flex flex-col justify-between relative cursor-pointer group" title="点击屏幕或电源键开机">
+            <!-- Scratches & Post-it Note on Monitor Bezel -->
+            <div class="absolute -top-3 right-6 bg-amber-200 text-amber-950 font-serif-cn text-[10px] px-2.5 py-1 shadow-md rotate-3 border border-amber-400/60">
+              📌 2010 暑假：少玩游戏多看书
+            </div>
+            <div class="absolute top-2 left-5 text-[9px] font-mono-code text-stone-700 font-bold tracking-widest">
+              SYNCMASTER 753DF · 2004
+            </div>
+
+            <!-- CRT Glass Inner Screen -->
+            <div class="crt-glass-screen w-full h-[175px] sm:h-[230px] rounded-xl border-4 border-[#4d4635] overflow-hidden relative flex flex-col items-center justify-center p-4">
+              <!-- Screen OFF State -->
+              <div id="crt-screen-off-view" class="flex flex-col items-center justify-center text-center space-y-3">
+                <div class="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-xl group-hover:scale-110 transition-transform">
+                  ⏻
+                </div>
+                <p class="font-pixel text-[11px] sm:text-xs text-emerald-300 tracking-wider">
+                  [ CLICK TO POWER ON PC ]
+                </p>
+                <p class="text-xs text-zinc-400 font-serif-cn">
+                  按下这台旧台式机的电源键，启动 2010 年的方块世界
+                </p>
+              </div>
+
+              <!-- Screen ON / Booting BIOS -> Minecraft Alpha State -->
+              <div id="crt-screen-on-view" class="hidden w-full h-full flex flex-col justify-between text-left font-mono-code text-[11px] sm:text-xs text-emerald-400">
+                <div id="crt-bios-lines" class="space-y-1">
+                  <p class="text-amber-300">AWARD MODULAR BIOS v6.00PG · Pentium(R) Dual-Core</p>
+                  <p>Memory Test: 2048MB OK ... IDE Primary Master: 160GB HDD</p>
+                  <p class="text-emerald-300">&gt; C:\Games\Minecraft\javaw.exe -Xmx1024M -jar Minecraft.jar</p>
+                </div>
+
+                <div class="my-auto text-center space-y-1.5 bg-black/60 py-2.5 px-3 rounded border border-emerald-500/30">
+                  <p class="font-pixel text-xs sm:text-sm text-white">MOJANG SPECIFICATIONS</p>
+                  <p id="crt-boot-progress-text" class="font-pixel text-[10px] sm:text-xs text-amber-300">
+                    Loading terrain... ▮▮▯▯
+                  </p>
+                  <p class="text-[11px] text-zinc-300 font-serif-cn">“地形在加载，我的人生也是”</p>
+                </div>
+
+                <div class="w-full bg-zinc-900 h-2 rounded overflow-hidden border border-emerald-500/40">
+                  <div id="crt-boot-bar" class="h-full bg-emerald-400 w-0 transition-all duration-300"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Monitor Bottom Bezel & Physical Power Button -->
+            <div class="flex items-center justify-between pt-2 px-1">
+              <div class="flex items-center gap-1.5">
+                <span class="w-3 h-1.5 bg-stone-600 rounded-sm"></span>
+                <span class="w-3 h-1.5 bg-stone-600 rounded-sm"></span>
+                <span class="w-3 h-1.5 bg-stone-600 rounded-sm"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="crt-power-led" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow"></span>
+                <button id="power-on-pc-btn" type="button"
+                        class="px-3 py-1 rounded bg-[#4a4333] hover:bg-emerald-700 text-amber-100 hover:text-white font-pixel text-[9px] border border-black/50 shadow transition-colors">
+                  ⏻ POWER
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monitor Stand Neck & Base -->
+          <div class="w-28 h-5 bg-[#9c9278] border-x-4 border-[#6e654f]"></div>
+          <div class="w-48 h-4 bg-[#b8ae93] rounded-t-lg border-2 border-[#6e654f]"></div>
+        </div>
+
+        <!-- Scratched Beige Desktop Tower Case (破旧台式机箱) -->
+        <div class="hidden sm:flex flex-col justify-between old-crt-casing w-36 h-60 rounded-xl p-3 relative">
+          <div class="space-y-2">
+            <!-- CD-ROM Drive Bay -->
+            <div class="h-6 bg-[#9e947a] border-2 border-[#6e654f] rounded-sm px-2 flex items-center justify-between">
+              <span class="text-[8px] font-mono-code text-stone-800 font-bold">52X CD-ROM</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-700"></span>
+            </div>
+            <!-- Floppy Bay -->
+            <div class="h-4 bg-[#9e947a] border border-[#6e654f] rounded-sm mx-2"></div>
+            <!-- Sticker -->
+            <div class="bg-sky-900/80 text-[8px] font-pixel text-sky-200 px-1.5 py-1 rounded w-fit mx-auto">
+              JAVA INSIDE ☕
+            </div>
+          </div>
+
+          <!-- Tower Power Button & Fan Grille -->
+          <div class="flex flex-col items-center gap-2">
+            <button id="tower-power-btn" type="button"
+                    class="w-10 h-10 rounded-full bg-stone-700 hover:bg-emerald-600 border-2 border-stone-900 text-white font-pixel text-xs flex items-center justify-center shadow-inner transition-colors"
+                    title="按下机箱电源键开机">
+              ⏻
+            </button>
+            <div class="grid grid-cols-6 gap-1 w-full px-2 pt-1">
+              <span class="h-1 bg-stone-700 rounded"></span>
+              <span class="h-1 bg-stone-700 rounded"></span>
+              <span class="h-1 bg-stone-700 rounded"></span>
+              <span class="h-1 bg-stone-700 rounded"></span>
+              <span class="h-1 bg-stone-700 rounded"></span>
+              <span class="h-1 bg-stone-700 rounded"></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Weathered Wooden Desk Surface (破木桌台面 + 旧键盘鼠标) -->
+      <div class="weathered-desk-surface w-screen max-w-none h-28 sm:h-36 mt-[-2px] flex flex-col items-center justify-start pt-4 px-4 relative">
+        <!-- Old PS/2 Keyboard & Mouse on the Desk -->
+        <div class="flex items-center justify-center gap-6">
+          <div class="w-56 sm:w-72 h-9 bg-[#c7bfa8] border-2 border-[#6e654f] rounded p-1 grid grid-cols-12 gap-0.5 shadow-lg">
+            <span class="bg-stone-700 rounded-[1px]"></span>
+            <span class="bg-stone-100 rounded-[1px]"></span>
+            <span class="bg-emerald-700 rounded-[1px]" title="W"></span>
+            <span class="bg-emerald-700 rounded-[1px]" title="A"></span>
+            <span class="bg-emerald-700 rounded-[1px]" title="S"></span>
+            <span class="bg-emerald-700 rounded-[1px]" title="D"></span>
+            <span class="bg-stone-100 rounded-[1px] col-span-4" title="SPACE"></span>
+            <span class="bg-stone-100 rounded-[1px]"></span>
+            <span class="bg-stone-700 rounded-[1px]"></span>
+          </div>
+          <div class="w-7 h-10 bg-[#c7bfa8] border-2 border-[#6e654f] rounded-full flex justify-center pt-1 shadow-lg">
+            <span class="w-1 h-2.5 bg-stone-700 rounded-full"></span>
+          </div>
+        </div>
+
+        <p id="desk-boot-caption" class="mt-3 text-xs sm:text-sm font-mono-code text-amber-200/90 animate-pulse">
+          👆 点击上方破台式机的【⏻ POWER】电源键，启动主机进入我的世界
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       LAYER 0: FULL-VIEWPORT THREE.JS 3D WEBGL VOXEL WORLD STAGE
+       Morphs dynamically across Prologue -> 2010 -> Java -> Paused -> Rebirth -> 30m2 AI -> Open Door
+       ===================================================================== -->
+  <canvas id="webgl-stage-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+
+  <!-- Secondary 2D Ambient Particle Overlay Canvas (kept for compatibility & extra sparkle) -->
+  <canvas id="ambient-bg-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-40"></canvas>
+
+  <!-- Interactive Cursor Spotlight & Cinema Vignette -->
+  <div class="cursor-spotlight cinema-vignette fixed inset-0 pointer-events-none z-0"></div>
+
+  <!-- Fullscreen World Reveal Overlay Gradient (activates when Chapter VI Door opens) -->
+  <div id="world-sunlight-aura" class="fixed inset-0 pointer-events-none z-0 opacity-0 transition-opacity duration-1000"
+       style="background: radial-gradient(circle at 50% 55%, rgba(56, 189, 248, 0.25), rgba(92, 158, 49, 0.16) 48%, transparent 78%);">
+  </div>
+
+  <!-- =====================================================================
+       MINECRAFT ACHIEVEMENT UNLOCKED BANNER (Top-Right Popup)
+       ===================================================================== -->
+  <div id="mc-achievement-popup" class="fixed top-20 right-6 z-50 pointer-events-none opacity-0 -translate-y-4 transition-all duration-500 bg-[#18181b]/95 backdrop-blur-xl border border-emerald-500/40 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3.5 max-w-xs">
+    <div class="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-400/50 flex items-center justify-center text-lg shrink-0">
+      <span id="mc-achieve-icon">🌱</span>
+    </div>
+    <div class="text-left font-mono-code">
+      <p class="text-[10px] font-pixel text-amber-300 tracking-wide">ACHIEVEMENT UNLOCKED</p>
+      <p id="mc-achieve-title" class="text-xs font-bold text-white mt-0.5">Welcome to my world.</p>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       TOP FIXED NAVIGATION & C418 STUDIO AUDIO CONTROLLER HUD
+       ===================================================================== -->
+  <header class="fixed top-0 left-0 right-0 z-50 px-4 sm:px-8 py-3 flex items-center justify-between backdrop-blur-2xl bg-black/50 border-b border-white/[0.08]">
+    <div class="flex items-center gap-3">
+      <button id="brand-home-btn" type="button" class="group flex items-center gap-2.5 text-left focus:outline-none" title="回到序章">
+        <span class="w-3.5 h-3.5 inline-block bg-[#5c9e31] border-t-2 border-[#7ec850] shadow-sm group-hover:scale-110 transition-transform"></span>
+        <span class="font-mono-code font-bold tracking-widest text-xs sm:text-sm text-white group-hover:text-emerald-400 transition-colors">HEXIN.WORLD</span>
+      </button>
+      <span class="hidden sm:inline-block text-xs text-zinc-700 font-mono-code">/</span>
+      <span id="current-chapter-badge" class="hidden sm:inline-block text-xs font-mono-code text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-3 py-0.5 rounded-full">
+        I · 2010
+      </span>
+    </div>
+
+    <!-- Chapter Quick Dots / Pills -->
+    <nav aria-label="Chapters" class="hidden lg:flex items-center gap-1 bg-zinc-900/75 backdrop-blur-md border border-white/10 rounded-full px-2 py-1">
+      <button type="button" data-scroll-to="chapter-1" class="chapter-nav-btn text-xs font-mono-code px-2.5 py-1 rounded-full text-emerald-300 bg-white/10 transition-all">I · 2010</button>
+      <button type="button" data-scroll-to="chapter-2" class="chapter-nav-btn text-xs font-mono-code px-2.5 py-1 rounded-full text-zinc-400 hover:text-white transition-all">II · 方块→字节</button>
+      <button type="button" data-scroll-to="chapter-3" class="chapter-nav-btn text-xs font-mono-code px-2.5 py-1 rounded-full text-zinc-400 hover:text-white transition-all">III · 暂停四年</button>
+      <button type="button" data-scroll-to="chapter-4" class="chapter-nav-btn text-xs font-mono-code px-2.5 py-1 rounded-full text-zinc-400 hover:text-white transition-all">IV · 重生</button>
+      <button type="button" data-scroll-to="chapter-5" class="chapter-nav-btn text-xs font-mono-code px-2.5 py-1 rounded-full text-zinc-400 hover:text-white transition-all">V · 现在</button>
+      <button type="button" data-scroll-to="chapter-6" class="chapter-nav-btn text-xs font-mono-code px-2.5 py-1 rounded-full text-zinc-400 hover:text-white transition-all">VI · 门</button>
+    </nav>
+
+    <!-- C418 Music Jukebox + Auto-Scroll + SFX Controls -->
+    <div class="flex items-center gap-2">
+      <!-- Dedicated C418 Minecraft Piano BGM Toggle + Track Switcher -->
+      <div class="flex items-center bg-zinc-900/90 border border-emerald-500/40 rounded-full p-0.5 shadow-lg shadow-emerald-950/50">
+        <button id="bgm-toggle-btn" type="button"
+                class="flex items-center gap-2 text-xs font-mono-code px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-200 transition-all"
+                title="播放/暂停 C418 风格 Minecraft 音乐厅毛毡钢琴 + 温暖弦乐 Pad">
+          <span id="bgm-disc-icon" class="inline-block">💿</span>
+          <span id="bgm-track-label" class="max-w-[115px] sm:max-w-[175px] truncate">C418 · Sweden</span>
+          <span id="bgm-eq-bars" class="flex items-end gap-0.5 h-3.5 px-0.5">
+            <span class="bar-1 w-0.5 h-1.5 bg-emerald-400 rounded-full"></span>
+            <span class="bar-2 w-0.5 h-2.5 bg-emerald-400 rounded-full"></span>
+            <span class="bar-3 w-0.5 h-1 bg-emerald-400 rounded-full"></span>
+            <span class="bar-4 w-0.5 h-2 bg-emerald-400 rounded-full"></span>
+          </span>
+        </button>
+        <button id="bgm-next-track-btn" type="button"
+                class="px-2 py-1 text-xs font-mono-code text-zinc-400 hover:text-emerald-300 transition-colors"
+                title="切换下一张 MC 原声唱片 (Sweden / Wet Hands / Aria Math)">
+          ⏭
+        </button>
+      </div>
+
+      <button id="autoscroll-toggle-btn" type="button"
+              class="hidden sm:flex items-center gap-1.5 text-xs font-mono-code px-3 py-1.5 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-white/10 transition-all"
+              title="电影级自动巡礼 (Cinema Auto-Scroll)">
+        <span id="autoscroll-icon" class="text-emerald-400">▶</span>
+        <span id="autoscroll-label">自动放映</span>
+      </button>
+
+      <button id="lang-toggle-btn" type="button"
+              class="flex items-center gap-1.5 text-xs font-mono-code px-3 py-1.5 rounded-full bg-sky-950/70 hover:bg-sky-900/80 text-sky-200 border border-sky-500/35 transition-all"
+              title="切换语言模式：中英双语 / 纯中文 / English">
+        <span>🌐</span>
+        <span id="lang-mode-label">中/EN</span>
+      </button>
+
+      <button id="sound-toggle-btn" type="button"
+              class="flex items-center gap-1.5 text-xs font-mono-code px-2.5 py-1.5 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-white/10 transition-all"
+              title="开启/关闭全局声音">
+        <span id="sound-icon">🔊</span>
+        <span id="sound-label" class="hidden md:inline">音效: 开</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Top Reading Progress Bar -->
+  <div class="fixed top-[53px] left-0 right-0 h-0.5 bg-zinc-950 z-50">
+    <div id="scroll-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-sky-400 w-0 transition-all duration-150"></div>
+  </div>
+
+  <!-- =====================================================================
+       BOTTOM MINECRAFT XP BAR & HOTBAR HUD (Interactive Chapter Inventory)
+       ===================================================================== -->
+  <div class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-1.5 px-3 w-full max-w-xl pointer-events-none">
+    <!-- Experience Level & Progress Bar -->
+    <div class="w-full max-w-md flex flex-col items-center gap-0.5">
+      <div class="flex items-center justify-between w-full px-1 text-[10px] font-pixel">
+        <span id="mc-xp-chapter-hint" class="text-zinc-400">SEED: 2010</span>
+        <span id="mc-xp-level" class="text-[#80ff20] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">LVL 9</span>
+        <span id="mc-bgm-nowplaying" class="text-emerald-400/90 truncate max-w-[190px]">♪ Click anywhere for C418 Piano</span>
+      </div>
+      <div class="w-full h-1.5 bg-[#14220e]/90 border border-black/80 rounded-full overflow-hidden shadow">
+        <div id="mc-xp-bar-fill" class="h-full bg-gradient-to-r from-[#5c9e31] via-[#80ff20] to-[#a7ff4f] w-[15%] transition-all duration-200"></div>
+      </div>
+    </div>
+
+    <!-- 7-Slot Hotbar (6 Chapters + Jukebox Slot) -->
+    <div class="pointer-events-auto flex items-center bg-[#121318]/85 backdrop-blur-xl border border-white/15 rounded-xl p-1 shadow-2xl gap-1">
+      <button type="button" data-scroll-to="chapter-1" data-slot="1" class="mc-hotbar-slot group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#27272a] hover:bg-[#3f3f46] border-2 border-emerald-400 flex flex-col items-center justify-center transition-all" title="1 · 2010 (九岁打开方块世界)">
+        <span class="text-[8px] font-mono-code text-zinc-400 absolute top-0.5 left-1">1</span>
+        <span class="text-sm">⛏️</span>
+        <span class="text-[8px] font-mono-code text-emerald-300">2010</span>
+      </button>
+      <button type="button" data-scroll-to="chapter-2" data-slot="2" class="mc-hotbar-slot group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#27272a]/70 hover:bg-[#3f3f46] border border-white/10 flex flex-col items-center justify-center transition-all" title="2 · 方块→字节 (HexinPlayer.java)">
+        <span class="text-[8px] font-mono-code text-zinc-500 absolute top-0.5 left-1">2</span>
+        <span class="text-sm">☕</span>
+        <span class="text-[8px] font-mono-code text-zinc-300">字节</span>
+      </button>
+      <button type="button" data-scroll-to="chapter-3" data-slot="3" class="mc-hotbar-slot group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#27272a]/70 hover:bg-[#3f3f46] border border-white/10 flex flex-col items-center justify-center transition-all" title="3 · 暂停四年 (▐▌ paused)">
+        <span class="text-[8px] font-mono-code text-zinc-500 absolute top-0.5 left-1">3</span>
+        <span class="text-xs font-pixel text-zinc-300">▐▌</span>
+        <span class="text-[8px] font-mono-code text-zinc-400">暂停</span>
+      </button>
+      <button type="button" data-scroll-to="chapter-4" data-slot="4" class="mc-hotbar-slot group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#27272a]/70 hover:bg-[#3f3f46] border border-white/10 flex flex-col items-center justify-center transition-all" title="4 · 重生 (SAP → 百度)">
+        <span class="text-[8px] font-mono-code text-zinc-500 absolute top-0.5 left-1">4</span>
+        <span class="text-sm">🚀</span>
+        <span class="text-[8px] font-mono-code text-amber-300">重生</span>
+      </button>
+      <button type="button" data-scroll-to="chapter-5" data-slot="5" class="mc-hotbar-slot group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#27272a]/70 hover:bg-[#3f3f46] border border-white/10 flex flex-col items-center justify-center transition-all" title="5 · 现在 (30㎡ 玩 AI)">
+        <span class="text-[8px] font-mono-code text-zinc-500 absolute top-0.5 left-1">5</span>
+        <span class="text-sm">🧠</span>
+        <span class="text-[8px] font-mono-code text-sky-300">30㎡</span>
+      </button>
+      <button type="button" data-scroll-to="chapter-6" data-slot="6" class="mc-hotbar-slot group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#27272a]/70 hover:bg-[#3f3f46] border border-white/10 flex flex-col items-center justify-center transition-all" title="6 · 门 (Welcome to my world)">
+        <span class="text-[8px] font-mono-code text-zinc-500 absolute top-0.5 left-1">6</span>
+        <span class="text-sm">🚪</span>
+        <span class="text-[8px] font-mono-code text-emerald-300">木门</span>
+      </button>
+      <div class="w-px h-7 bg-zinc-700/80 mx-0.5"></div>
+      <button id="hotbar-jukebox-btn" type="button" class="group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 flex flex-col items-center justify-center transition-all" title="点击切换/开关 MC 唱片机原声 (快捷键 M)">
+        <span class="text-[8px] font-mono-code text-emerald-400 absolute top-0.5 left-1">M</span>
+        <span class="text-sm">🎵</span>
+        <span class="text-[8px] font-mono-code text-emerald-200">BGM</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Feedback Notification -->
+  <div id="toast-banner" class="fixed bottom-24 right-6 z-50 pointer-events-none opacity-0 translate-y-3 transition-all duration-300 bg-zinc-900/95 border border-emerald-500/40 text-emerald-200 px-4 py-2.5 rounded-xl shadow-2xl font-mono-code text-xs flex items-center gap-2">
+    <span id="toast-icon">✨</span>
+    <span id="toast-text">Ready</span>
+  </div>
+
+  <!-- =====================================================================
+       PROLOGUE / OPENING SCREEN (Lawted.tech Cinematic Scrollytelling Intro)
+       ===================================================================== -->
+  <section id="prologue" class="relative z-10 min-h-screen flex flex-col justify-center items-center px-6 pt-24 pb-20 text-center">
+    <div class="max-w-4xl mx-auto space-y-10">
+      <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.04] backdrop-blur-md border border-white/10 text-xs font-mono-code text-zinc-300 shadow-inner">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span>WEBGL 3D NARRATIVE FILM · C418 CONCERT PIANO SYNTHESIS</span>
+      </div>
+
+      <div class="space-y-5">
+        <p class="text-emerald-400/90 font-editorial italic text-xl sm:text-2xl tracking-wide">
+          Well ... It all began in that blocky summer of 2010.
+        </p>
+        <h1 class="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-zinc-100 to-zinc-500 leading-[1.08]">
+          Loading Terrain,<br />Loading Life.
+        </h1>
+        <p class="text-lg sm:text-2xl text-zinc-300 font-serif-cn pt-2 tracking-wide">
+          一切，都要从九岁那年双击打开的方块世界说起。
+        </p>
+      </div>
+
+      <p class="text-sm sm:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed font-light">
+        背景中的 **Three.js 3D 体素世界** 与 **C418 多声部毛毡钢琴 + 温暖弦乐** 将随你的每一次滚动实时演化。点击页面任意位置或下方按钮，开启属于我的六幕人生巡礼。
+      </p>
+
+      <div class="pt-2 flex flex-wrap items-center justify-center gap-4">
+        <button id="start-journey-btn" type="button"
+                class="px-8 py-4 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-medium text-sm tracking-wide transition-all shadow-2xl shadow-emerald-600/35 flex items-center gap-2.5">
+          <span>向下滚动 · 进入世界</span>
+          <span class="font-mono-code">↓</span>
+        </button>
+        <button id="overview-table-btn" type="button"
+                class="px-6 py-4 rounded-full luxury-glass hover:border-white/25 text-zinc-300 font-mono-code text-xs transition-all">
+          查看六幕人生剧本 (Storyboard)
+        </button>
+        <button id="replay-pc-boot-btn" type="button"
+                class="px-5 py-4 rounded-full bg-amber-950/50 hover:bg-amber-900/60 border border-amber-500/35 text-amber-200 font-mono-code text-xs transition-all">
+          🖥️ 重温 2010 破台式机开机
+        </button>
+      </div>
+
+      <!-- C418 Interactive Music Disc Selector Pill -->
+      <div class="pt-4 flex items-center justify-center">
+        <div class="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2.5 rounded-2xl luxury-glass text-xs font-mono-code text-zinc-400">
+          <span class="text-emerald-400">🎹 C418 原声唱片切换:</span>
+          <button type="button" data-bgm-track="0" class="bgm-preset-btn px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition-all">
+            💿 Subwoofer Lullaby
+          </button>
+          <button type="button" data-bgm-track="1" class="bgm-preset-btn px-3 py-1 rounded-lg hover:bg-white/5 text-zinc-400 border border-transparent transition-all">
+            💿 Sweden (Calm 3)
+          </button>
+          <button type="button" data-bgm-track="2" class="bgm-preset-btn px-3 py-1 rounded-lg hover:bg-white/5 text-zinc-400 border border-transparent transition-all">
+            💿 Wet Hands
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collapsible 6-Act Storyboard Blueprint Modal/Drawer -->
+    <div id="storyboard-drawer" class="hidden mt-10 w-full max-w-4xl mx-auto luxury-glass rounded-2xl p-4 sm:p-6 text-left shadow-2xl">
+      <div class="flex items-center justify-between pb-3 mb-3 border-b border-zinc-800">
+        <span class="font-mono-code text-xs text-emerald-400">┌── HEXIN'S 6-CHAPTER STORYBOARD ──┐</span>
+        <button id="close-storyboard-btn" type="button" class="text-xs font-mono-code text-zinc-400 hover:text-white px-2 py-0.5 rounded bg-zinc-900">关闭 [×]</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs sm:text-sm font-mono-code border-collapse">
+          <thead>
+            <tr class="border-b border-zinc-800 text-zinc-400">
+              <th class="py-2 px-3 text-left w-36">章节 (Act)</th>
+              <th class="py-2 px-3 text-left">核心叙事与交互彩蛋</th>
+              <th class="py-2 px-3 text-right w-20">传送</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800/70 text-zinc-300">
+            <tr class="hover:bg-white/5">
+              <td class="py-2.5 px-3 text-emerald-400 font-semibold">I · 2010</td>
+              <td class="py-2.5 px-3">九岁打开方块世界，“地形在加载，我的人生也是” + 像素字 <code class="text-amber-300">Loading terrain...▮▮▮▯</code> 闪烁</td>
+              <td class="py-2.5 px-3 text-right"><button type="button" data-scroll-to="chapter-1" class="text-emerald-400 hover:underline">GO →</button></td>
+            </tr>
+            <tr class="hover:bg-white/5">
+              <td class="py-2.5 px-3 text-lime-400 font-semibold">II · 方块→字节</td>
+              <td class="py-2.5 px-3">学 Java 梯子，穿插 <code class="text-lime-300">HexinPlayer.java</code> (<code class="text-amber-300">curiosity++</code> 梗) + 16×16 草方块像素画</td>
+              <td class="py-2.5 px-3 text-right"><button type="button" data-scroll-to="chapter-2" class="text-emerald-400 hover:underline">GO →</button></td>
+            </tr>
+            <tr class="hover:bg-white/5">
+              <td class="py-2.5 px-3 text-zinc-400 font-semibold">III · 暂停四年</td>
+              <td class="py-2.5 px-3">灰暗色调自嘲段，“世界按下了暂停键，我也是” + <code class="text-zinc-200">▐▌ paused</code> 状态栏</td>
+              <td class="py-2.5 px-3 text-right"><button type="button" data-scroll-to="chapter-3" class="text-emerald-400 hover:underline">GO →</button></td>
+            </tr>
+            <tr class="hover:bg-white/5">
+              <td class="py-2.5 px-3 text-amber-400 font-semibold">IV · 重生</td>
+              <td class="py-2.5 px-3">SAP → 百度，<code class="text-amber-300">comeback.py</code> 返回 <code class="text-emerald-300">[Offer, Offer, ...]</code>，结尾埋“敲门声后面有用”</td>
+              <td class="py-2.5 px-3 text-right"><button type="button" data-scroll-to="chapter-4" class="text-emerald-400 hover:underline">GO →</button></td>
+            </tr>
+            <tr class="hover:bg-white/5">
+              <td class="py-2.5 px-3 text-sky-400 font-semibold">V · 现在</td>
+              <td class="py-2.5 px-3">“英雄不提当年勇” → 30㎡ 玩 AI + <code class="text-sky-300">while alive: learn("AI")</code></td>
+              <td class="py-2.5 px-3 text-right"><button type="button" data-scroll-to="chapter-5" class="text-emerald-400 hover:underline">GO →</button></td>
+            </tr>
+            <tr class="hover:bg-white/5">
+              <td class="py-2.5 px-3 text-emerald-300 font-semibold">VI · 门</td>
+              <td class="py-2.5 px-3">右键(或点击)开像素木门，3D 转开露出蓝天草地 + <code class="text-white">"Welcome to my world."</code></td>
+              <td class="py-2.5 px-3 text-right"><button type="button" data-scroll-to="chapter-6" class="text-emerald-400 hover:underline">GO →</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       CHAPTER I · 2010
+       九岁打开方块世界，“地形在加载，我的人生也是” + 像素字 Loading terrain...▮▮▮▯ 闪烁
+       ===================================================================== -->
+  <section id="chapter-1" data-chapter="I · 2010" class="chapter-section relative z-10 min-h-screen py-36 px-6 flex flex-col justify-center">
+    <div class="max-w-4xl mx-auto w-full space-y-24 relative">
+      <div class="chapter-watermark absolute -top-16 -left-4 select-none">ACT I · 2010</div>
+
+      <!-- Lawted-Style Theatrical Bilingual Dialogue Beat 1 -->
+      <div class="story-beat space-y-4 max-w-2xl">
+        <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg bg-amber-950/60 border border-amber-500/30 text-amber-300 font-pixel text-xs shadow">
+          <span>I · 2010</span>
+          <span class="text-[10px] text-amber-400/80 font-mono-code">AGE 9 · FIRST SPAWN</span>
+        </div>
+        <h2 class="text-4xl sm:text-6xl font-bold text-white tracking-tight leading-[1.12]">
+          In 2010, I was nine.<br />
+          <span class="font-editorial italic font-normal text-amber-200/90">I opened a world made of blocks.</span>
+        </h2>
+        <p class="text-xl sm:text-2xl text-zinc-300 font-serif-cn pt-1">
+          2010 年，我九岁。在那个安静的午后，我第一次双击打开了方块世界。
+        </p>
+      </div>
+
+      <!-- Theatrical Beat 2 -->
+      <div class="story-beat space-y-4 max-w-2xl ml-auto text-right border-r-2 border-amber-500/40 pr-6">
+        <p class="text-2xl sm:text-3xl text-zinc-100 font-editorial italic leading-relaxed">
+          "Chunk by chunk, trees and mountains rose out of the void."
+        </p>
+        <p class="text-base sm:text-lg text-zinc-400 leading-relaxed font-serif-cn">
+          视野尽头的迷雾一点点散开，山川、树木与海岸线一格一格从虚空中生长出来。那时候我还不知道，推开这扇窗，会改变我往后十几年的人生轨迹。
+        </p>
+      </div>
+
+      <!-- Core Quote Beat -->
+      <div class="story-beat luxury-glass tilt-card rounded-3xl p-8 sm:p-14 text-center space-y-5 border border-amber-400/25 glow-amber">
+        <p class="text-xs font-mono-code uppercase tracking-[0.25em] text-amber-300/90">The Genesis Quote · 2010</p>
+        <blockquote class="text-3xl sm:text-5xl md:text-6xl font-bold text-white leading-tight tracking-tight">
+          “地形在加载，我的人生也是”
+        </blockquote>
+        <p class="text-xl sm:text-2xl text-zinc-300 font-editorial italic">
+          "The terrain was loading, and so was my life."
+        </p>
+      </div>
+
+      <!-- Minecraft Dirt Loading Screen Widget -->
+      <div class="story-beat mc-dirt-bg border-4 border-[#593d28] rounded-3xl p-6 sm:p-12 shadow-2xl relative overflow-hidden tilt-card">
+        <div class="absolute inset-0 bg-black/55 pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col items-center text-center space-y-6">
+          <div class="flex items-center gap-2 text-xs font-pixel text-zinc-300 tracking-wider uppercase">
+            <span class="w-2 h-2 bg-emerald-400 inline-block animate-ping"></span>
+            <span>Minecraft Alpha v1.2.6 — World: New_Life_Seed_2010</span>
+          </div>
+
+          <!-- Flashing Pixel Text: Loading terrain...▮▮▮▯ -->
+          <div class="bg-black/85 border-2 border-zinc-600 px-6 py-6 rounded-2xl w-full max-w-xl shadow-2xl">
+            <div class="font-pixel text-base sm:text-xl md:text-2xl text-emerald-400 flex items-center justify-center gap-2 flex-wrap">
+              <span>Loading terrain...</span>
+              <span id="terrain-bars" class="text-amber-300 animate-pixel-blink">▮▮▮▯</span>
+            </div>
+            <p class="text-xs font-mono-code text-zinc-400 mt-3" id="chunk-status-text">
+              Building spawn chunks (Age: 9) — Generating trees, caves &amp; curiosity...
+            </p>
+          </div>
+
+          <!-- Interactive Terrain Chunk Builder Mini-Grid -->
+          <div class="w-full max-w-lg space-y-2.5">
+            <div class="flex items-center justify-between text-xs font-mono-code text-zinc-300">
+              <span>⛏ 点击方块弹奏 C418 钢琴音阶并生成区块:</span>
+              <button id="regen-terrain-btn" type="button" class="px-3.5 py-1.5 rounded-lg bg-amber-700/80 hover:bg-amber-600 text-amber-100 border border-amber-400/40 transition-colors">
+                ↻ 重新加载地形
+              </button>
+            </div>
+            <div id="chapter1-voxel-strip" class="grid grid-cols-12 gap-1.5 bg-black/65 p-3 rounded-xl border border-white/10">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       CHAPTER II · 方块→字节
+       学 Java 梯子，穿插 HexinPlayer.java(curiosity++ 梗)+ 草方块像素画
+       ===================================================================== -->
+  <section id="chapter-2" data-chapter="II · 方块→字节" class="chapter-section relative z-10 min-h-screen py-36 px-6 flex flex-col justify-center">
+    <div class="max-w-4xl mx-auto w-full space-y-24 relative">
+      <div class="chapter-watermark absolute -top-16 right-0 select-none">BLOCKS TO BYTES</div>
+
+      <!-- Chapter Header with 3D Rotating Grass Block Cube -->
+      <div class="story-beat flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="space-y-4 max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 font-pixel text-xs">
+            <span>II · 方块 → 字节</span>
+          </div>
+          <h2 class="text-4xl sm:text-6xl font-bold text-white tracking-tight leading-[1.12]">
+            Blocks became my ladder<br />
+            <span class="font-editorial italic font-normal text-emerald-300">into the world of Java.</span>
+          </h2>
+          <p class="text-xl sm:text-2xl text-zinc-300 font-serif-cn">
+            为了搞懂方块背后的魔法，Minecraft 成了我学 Java 的梯子。
+          </p>
+        </div>
+
+        <!-- 3D Isometric Rotating Minecraft Grass Block -->
+        <div class="cube-scene shrink-0 mx-auto sm:mx-0" title="3D 草方块体素模型">
+          <div class="mc-cube-3d">
+            <div class="mc-cube-face mc-cube-top"></div>
+            <div class="mc-cube-face mc-cube-bottom"></div>
+            <div class="mc-cube-face mc-cube-front"></div>
+            <div class="mc-cube-face mc-cube-back"></div>
+            <div class="mc-cube-face mc-cube-right"></div>
+            <div class="mc-cube-face mc-cube-left"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bilingual Story Beats -->
+      <div class="story-beat space-y-4 border-l-2 border-emerald-500/40 pl-6 max-w-2xl">
+        <p class="text-2xl sm:text-3xl text-zinc-100 font-editorial italic leading-relaxed">
+          "Every grass block was secretly a class; every redstone pulse was a line of logic."
+        </p>
+        <p class="text-base sm:text-lg text-zinc-400 leading-relaxed font-serif-cn">
+          从反编译第一个 Forge Mod，到亲手写下第一行 `public class HexinPlayer`，草方块在我眼里渐渐褪去了像素外衣，露出了底下流淌的十六进制字节与永不停歇的 `curiosity++`。
+        </p>
+      </div>
+
+      <!-- Two-Column Showcase: 16x16 Grass Block Pixel Art + HexinPlayer.java -->
+      <div class="story-beat grid grid-cols-1 lg:grid-cols-12 gap-7 items-stretch">
+
+        <!-- Left Column: Interactive 16x16 Grass Block Pixel Art (草方块像素画) -->
+        <div class="lg:col-span-5 luxury-glass tilt-card rounded-3xl p-6 flex flex-col justify-between glow-green">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-pixel text-emerald-400">GRASS_BLOCK.PNG</span>
+              <span class="text-xs font-mono-code text-zinc-400">16×16 Pixel Art</span>
+            </div>
+            <p class="text-xs text-zinc-400">
+              点击像素格体验破坏/放置草方块音效，或切换底层字节码视图：
+            </p>
+          </div>
+
+          <!-- 16x16 Pixel Canvas Container -->
+          <div class="my-5 flex flex-col items-center justify-center">
+            <div class="relative p-3.5 bg-zinc-950/90 rounded-2xl border border-zinc-800 shadow-inner">
+              <canvas id="grass-block-canvas" width="192" height="192" class="pixelated cursor-pointer rounded-lg"></canvas>
+              <div id="byte-overlay-badge" class="hidden absolute inset-3.5 bg-black/90 backdrop-blur-md rounded-lg flex flex-col items-center justify-center p-3 font-mono-code text-[10px] text-emerald-400 leading-tight overflow-hidden">
+                <span>CAFEBABE 00000034</span>
+                <span>01000010 01001100</span>
+                <span>01001111 01000011</span>
+                <span class="text-amber-300 mt-1.5">Block.grass.id = 2</span>
+                <span class="text-zinc-400">meta: 0x00 (Forge JVM)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-3 border-t border-zinc-800/80">
+            <button id="toggle-byte-view-btn" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-zinc-800/90 hover:bg-zinc-700 text-xs font-mono-code text-zinc-200 transition-colors">
+              ⇄ 切换 方块 / 字节码
+            </button>
+            <button id="reset-grass-btn" type="button" class="py-2.5 px-3.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 text-xs font-mono-code text-emerald-300 border border-emerald-500/30 transition-colors">
+              重绘方块
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: HexinPlayer.java (curiosity++ meme) -->
+        <div class="lg:col-span-7 luxury-glass tilt-card rounded-3xl overflow-hidden flex flex-col justify-between border border-emerald-500/25">
+          <!-- IDE Tab Bar -->
+          <div class="bg-black/60 px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+              <span class="ml-2 font-mono-code text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-500/25 px-2.5 py-0.5 rounded-md">
+                ☕ HexinPlayer.java
+              </span>
+            </div>
+            <button id="run-java-btn" type="button"
+                    class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono-code text-xs font-semibold flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-600/30">
+              <span>▶ Run</span>
+              <code class="text-emerald-100">curiosity++</code>
+            </button>
+          </div>
+
+          <!-- Code Body -->
+          <pre class="p-6 text-xs sm:text-sm font-mono-code leading-relaxed overflow-x-auto text-zinc-200"><code><span class="text-pink-400">package</span> world.hexin.origin;
+
+<span class="text-pink-400">public class</span> <span class="text-amber-300">HexinPlayer</span> <span class="text-pink-400">extends</span> <span class="text-sky-300">MinecraftKid</span> {
+    <span class="text-pink-400">private int</span> curiosity = <span class="text-emerald-400 font-bold" id="java-curiosity-val">1024</span>;
+    <span class="text-pink-400">private</span> String ladder = <span class="text-amber-200">"Block -> Forge Mod -> Java Bytecode"</span>;
+
+    <span class="text-sky-400">@Override</span>
+    <span class="text-pink-400">public void</span> <span class="text-amber-200">onServerTick</span>() {
+        <span class="text-zinc-500">// 别人拿梯子爬矿洞，我拿梯子爬 Java 源码</span>
+        <span class="text-pink-400">while</span> (world.hasUnexploredChunks()) {
+            <span class="text-emerald-400 font-bold">curiosity++;</span> <span class="text-zinc-500">// 哪怕 int 溢出也停不下来</span>
+            craft(<span class="text-amber-200">"Redstone"</span>, <span class="text-amber-200">"JVM"</span>);
+        }
+    }
+}</code></pre>
+
+          <!-- Console Output -->
+          <div class="bg-black/80 border-t border-white/10 px-5 py-3.5 font-mono-code text-xs">
+            <div class="flex items-center justify-between text-zinc-500 mb-1">
+              <span>[JVM Console Output · HotSpot 64-Bit]</span>
+              <span id="curiosity-counter-badge" class="text-emerald-400 font-semibold">curiosity = 1024</span>
+            </div>
+            <div id="java-console-log" class="text-zinc-300 truncate">
+              &gt; Compiling HexinPlayer.java ... Ready. Click [▶ Run curiosity++] to tick!
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       CHAPTER III · 暂停四年
+       灰暗色调自嘲段，“世界按下了暂停键，我也是” + ▐▌ paused
+       ===================================================================== -->
+  <section id="chapter-3" data-chapter="III · 暂停四年" class="chapter-section relative z-10 min-h-screen py-36 px-6 flex flex-col justify-center paused-scanlines transition-colors duration-700">
+    <div class="max-w-4xl mx-auto w-full space-y-20 relative">
+      <div class="chapter-watermark absolute -top-16 left-0 select-none">PAUSED · 4 YRS</div>
+
+      <!-- Chapter Header -->
+      <div class="story-beat space-y-4 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-zinc-800/90 border border-zinc-600/50 text-zinc-300 font-pixel text-xs">
+          <span>III · 暂停四年</span>
+          <span class="text-[10px] font-mono-code text-zinc-400">MUFFLED LOW-PASS AUDIO</span>
+        </div>
+        <h2 class="text-4xl sm:text-6xl font-bold text-zinc-100 tracking-tight leading-[1.12]">
+          Then the saturation<br />
+          <span class="font-editorial italic font-normal text-zinc-400">drained from the frame.</span>
+        </h2>
+        <p class="text-xl sm:text-2xl text-zinc-400 font-serif-cn">
+          有一段长达四年的时光，连背景里的钢琴曲都像是沉入了水底。
+        </p>
+      </div>
+
+      <!-- Self-deprecating Grey Tone Monologue (灰暗色调自嘲段) -->
+      <div class="story-beat space-y-4 border-l-2 border-zinc-600 pl-6 max-w-2xl text-zinc-400">
+        <p class="text-2xl sm:text-3xl text-zinc-300 font-editorial italic leading-relaxed">
+          "While everyone else was speedrunning the main quest, I was AFK in a cobblestone shelter."
+        </p>
+        <p class="text-base sm:text-lg leading-relaxed font-serif-cn">
+          如果把人生比作联机服，那四年我大概是全服最标准的“挂机玩家”。别人忙着刷副本、拿成就、一路狂飙；我却像掉进了没有坐标的基岩层，在迷茫与内耗里原地打转——连苦力怕路过都嫌我太安静，懒得炸我一下。
+        </p>
+      </div>
+
+      <!-- Core Quote + ▐▌ paused Display -->
+      <div class="story-beat luxury-glass tilt-card border border-zinc-700/80 rounded-3xl p-8 sm:p-14 text-center space-y-8 shadow-2xl relative overflow-hidden">
+        <div class="inline-flex items-center gap-3.5 px-7 py-3.5 rounded-2xl bg-black/80 border border-zinc-700 font-pixel text-xl sm:text-3xl text-zinc-200 tracking-widest animate-pulse-slow shadow-inner">
+          <span>▐▌</span>
+          <span>paused</span>
+        </div>
+
+        <div class="space-y-3">
+          <blockquote class="text-3xl sm:text-5xl md:text-6xl font-bold text-zinc-100 leading-tight">
+            “世界按下了暂停键，我也是”
+          </blockquote>
+          <p class="text-lg sm:text-2xl text-zinc-400 font-editorial italic">
+            "The world pressed pause, and so did I."
+          </p>
+        </div>
+
+        <!-- Interactive Frozen Timeline Bar -->
+        <div class="max-w-md mx-auto space-y-3.5 pt-2">
+          <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div id="paused-timeline-fill" class="h-full bg-zinc-400 w-1/3 transition-all duration-500"></div>
+          </div>
+          <div class="flex items-center justify-between text-xs font-mono-code text-zinc-500">
+            <span id="paused-timer-label">STATE: AFK_BUFFERING (4 YEARS)</span>
+            <button id="unpause-attempt-btn" type="button" class="text-zinc-200 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-4 py-1.5 rounded-xl border border-zinc-600 transition-colors">
+              ▶ 尝试解除暂停 (Resume)
+            </button>
+          </div>
+          <p id="unpause-feedback-msg" class="text-xs font-mono-code text-zinc-400 min-h-[1.25rem]">
+            * 暂停不是剧终，只是在蓄力等待一次重写编译器的契机。
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       CHAPTER IV · 重生
+       SAP → 百度，comeback.py 返回 [Offer, Offer, ...], 结尾埋“敲门声后面有用”
+       ===================================================================== -->
+  <section id="chapter-4" data-chapter="IV · 重生" class="chapter-section relative z-10 min-h-screen py-36 px-6 flex flex-col justify-center">
+    <div class="max-w-4xl mx-auto w-full space-y-20 relative">
+      <div class="chapter-watermark absolute -top-16 right-0 select-none">RESPAWN</div>
+
+      <!-- Chapter Header -->
+      <div class="story-beat space-y-4 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-amber-950/70 border border-amber-500/40 text-amber-300 font-pixel text-xs">
+          <span>IV · 重生</span>
+          <span class="text-[10px] font-mono-code text-amber-200/80">SAP → BAIDU · 顺利就业</span>
+        </div>
+        <h2 class="text-4xl sm:text-6xl font-bold text-white tracking-tight leading-[1.12]">
+          Clearing the cache.<br />
+          <span class="font-editorial italic font-normal text-amber-300">Step by step, back to work.</span>
+        </h2>
+        <p class="text-xl sm:text-2xl text-zinc-300 font-serif-cn">
+          把落下的四年一行行补回来：从 SAP 到百度，一步步顺利就业，让生活重新跑通。
+        </p>
+      </div>
+
+      <!-- INTERACTIVE 1: 180-Day Git Contribution Block Wall (180 天深夜 Git 方块矩阵) -->
+      <div class="story-beat luxury-glass tilt-card rounded-3xl p-6 sm:p-8 space-y-6 border border-emerald-500/30 glow-green">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div class="space-y-1">
+            <div class="inline-flex items-center gap-2 text-xs font-mono-code text-emerald-300">
+              <span>🟩 180 DAYS OF GIT COMMITS · 180 天重生方块墙</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/30 text-[10px]">SAP → 百度 · 顺利就业</span>
+            </div>
+            <p class="text-xs sm:text-sm text-zinc-400">
+              没有捷径，就是整整 <strong>180 天</strong> 一格一格把灰暗填满。按住鼠标划过或点击下方方块，点亮绿宝石、黄金与钻石提交记录：
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <span id="respawn-progress-pct" class="font-pixel text-xs text-emerald-400">90 / 180 DAYS</span>
+            <button id="light-all-commits-btn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono-code text-xs font-semibold transition-all shadow-lg shadow-emerald-600/25">
+              点亮全部绿格子
+            </button>
+            <button id="respawn-all-steps-btn" type="button" class="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/40 text-amber-200 font-mono-code text-xs transition-all">
+              ↻ 一键点亮全流程
+            </button>
+          </div>
+        </div>
+
+        <!-- 180-Day Progress Bar -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-mono-code text-zinc-400">
+            <span id="git-commit-count-label" class="text-emerald-400 font-semibold">Commits: 90 / 180 Days</span>
+            <span id="git-hover-day-log" class="text-emerald-300 truncate">划过任意 Git 小绿格查看当日记录 · 180 天持续提交</span>
+          </div>
+          <div class="w-full h-2 bg-zinc-900 rounded-full overflow-hidden p-0.5 border border-white/10">
+            <div id="respawn-quest-bar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-sky-400 rounded-full w-1/2 transition-all duration-300"></div>
+          </div>
+        </div>
+
+        <!-- 180-Day Git Block Matrix (30 columns x 6 rows = 180 blocks) -->
+        <div class="bg-black/65 rounded-2xl p-4 sm:p-5 border border-white/10 space-y-3 overflow-x-auto">
+          <div class="flex items-center justify-between text-[10px] font-mono-code text-zinc-500 min-w-[520px] px-1">
+            <span>Month 01 · 清空缓存</span>
+            <span>Month 02 · 死磕基础</span>
+            <span>Month 03 · SAP 实习破冰</span>
+            <span>Month 04 · 密集投递</span>
+            <span>Month 05 · 百度面试</span>
+            <span class="text-emerald-400">Month 06 · 顺利就业 🎉</span>
+          </div>
+
+          <div id="respawn-git-grid" class="grid gap-1.5 min-w-[520px]" style="grid-template-columns: repeat(30, minmax(0, 1fr));">
+            <!-- 180 blocks populated by JS -->
+          </div>
+
+          <div class="flex items-center justify-between text-[10px] font-mono-code text-zinc-500 pt-1 min-w-[520px]">
+            <span>💡 提示：按住鼠标左键在网格上滑动可连续点亮方块</span>
+            <div class="flex items-center gap-1.5">
+              <span>Less</span>
+              <span class="w-3 h-3 rounded-[2px] bg-[#161b22] inline-block border border-white/10" title="0 Commits"></span>
+              <span class="w-3 h-3 rounded-[2px] bg-[#0e4429] inline-block" title="Level 1 Git Green"></span>
+              <span class="w-3 h-3 rounded-[2px] bg-[#006d32] inline-block" title="Level 2 Git Green"></span>
+              <span class="w-3 h-3 rounded-[2px] bg-[#26a641] inline-block" title="Level 3 Git Green"></span>
+              <span class="w-3 h-3 rounded-[2px] bg-[#39d353] inline-block" title="Level 4 Git Green"></span>
+              <span>More (Git 小绿格子)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE 2: comeback.py Code Window returning [Offer, Offer, ...] + Offer Unboxer -->
+      <div class="story-beat luxury-glass tilt-card border border-amber-500/35 rounded-3xl overflow-hidden shadow-2xl">
+        <div class="bg-black/60 px-5 py-3.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+            <span class="ml-2 font-mono-code text-xs text-amber-300 bg-amber-950/50 border border-amber-500/25 px-2.5 py-0.5 rounded-md">
+              🐍 comeback.py
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="add-interview-exp-btn" type="button"
+                    class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono-code text-xs border border-white/10 transition-all">
+              + 攒一次面试经验
+            </button>
+            <button id="run-comeback-btn" type="button"
+                    class="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-mono-code text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg shadow-amber-500/25">
+              <span>▶ python3 comeback.py</span>
+            </button>
+          </div>
+        </div>
+
+        <pre class="p-6 text-xs sm:text-sm font-mono-code leading-relaxed overflow-x-auto text-zinc-200"><code><span class="text-pink-400">class</span> <span class="text-amber-300">Offer</span>:
+    <span class="text-pink-400">def</span> <span class="text-sky-300">__init__</span>(self, company: str, role=<span class="text-amber-200">"Employed"</span>):
+        self.company = company
+    <span class="text-pink-400">def</span> <span class="text-sky-300">__repr__</span>(self):
+        <span class="text-pink-400">return</span> <span class="text-amber-200">f"Offer({self.company})"</span>
+
+<span class="text-pink-400">def</span> <span class="text-emerald-400">comeback</span>(paused_years=<span class="text-sky-300">4</span>, interviews=<span class="text-emerald-400 font-bold" id="comeback-interview-param">12</span>):
+    <span class="text-zinc-500"># 不吹大厂光环，只求踏实就业：SAP ➔ 百度</span>
+    milestones = [<span class="text-amber-200">"SAP"</span>, <span class="text-amber-200">"Baidu"</span>, <span class="text-amber-200">"Steady_Job"</span>]
+    <span class="text-pink-400">return</span> [Offer(m) <span class="text-pink-400">for</span> m <span class="text-pink-400">in</span> milestones]
+
+<span class="text-pink-400">if</span> __name__ == <span class="text-amber-200">"__main__"</span>:
+    result = comeback()
+    <span class="text-sky-300">print</span>(result)  <span class="text-emerald-400 font-semibold"># &gt;&gt;&gt; [Offer, Offer, ...]</span></code></pre>
+
+        <!-- Interactive Offer Envelope Unboxer Bar -->
+        <div class="bg-black/65 border-t border-white/10 px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+          <span class="text-xs font-mono-code text-zinc-400">📩 点击拆开返回的 Offer 信封:</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" data-offer-item="SAP · 第一份实习与工程破冰" class="offer-envelope-btn px-3 py-1 rounded-lg bg-sky-950/60 hover:bg-sky-900/80 border border-sky-500/35 text-xs font-mono-code text-sky-200 transition-all">
+              ✉️ Offer("SAP")
+            </button>
+            <button type="button" data-offer-item="百度 · 顺利就业，靠代码踏实生活" class="offer-envelope-btn px-3 py-1 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/35 text-xs font-mono-code text-amber-200 transition-all">
+              ✉️ Offer("Baidu")
+            </button>
+            <button type="button" data-offer-item="Offer, Offer, ... · 暂停键正式解除！" class="offer-envelope-btn px-3 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/35 text-xs font-mono-code text-emerald-200 transition-all">
+              ✉️ [Offer, Offer, ...]
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-black/85 border-t border-white/10 px-6 py-4 font-mono-code text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div id="comeback-output" class="text-emerald-400 font-semibold">
+            &gt;&gt;&gt; Return Value: [Offer("SAP"), Offer("Baidu"), Offer, Offer, ...]
+          </div>
+          <span class="text-xs text-zinc-500">Exit code 0 · Employed &amp; Respawned</span>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE 3: Foreshadowing Easter Egg: 结尾埋“敲门声后面有用” + Rhythm Knock Pad -->
+      <div class="story-beat luxury-glass border border-amber-400/40 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-2xl">
+        <div class="space-y-2 max-w-xl">
+          <div class="inline-flex items-center gap-2 text-xs font-mono-code text-amber-300">
+            <span>🚪 伏笔线索 · FORESHADOWING CUE</span>
+            <span id="knock-key-status" class="px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">待收集 (0/3)</span>
+          </div>
+          <p class="text-base sm:text-xl font-medium text-white font-serif-cn">
+            对了，当重生的机会来临时，房间外总伴随着清脆的<span class="text-amber-300 underline decoration-wavy underline-offset-4">敲门声</span>——先试着敲三下记住这个声音，<strong>后面有用</strong>。
+          </p>
+          <p class="text-xs text-zinc-400 font-mono-code">
+            "Wait — knock 3 times to memorize this sound. You'll need it at the final door in Chapter VI."
+          </p>
+        </div>
+
+        <div class="flex flex-col items-stretch sm:items-end gap-2 shrink-0 w-full md:w-auto">
+          <button id="foreshadow-knock-btn" type="button"
+                  class="px-5 py-3 rounded-2xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 font-mono-code text-xs flex items-center justify-center gap-2.5 transition-all shadow-lg">
+            <span>✊ 试听敲门声</span>
+            <span id="knock-clue-badge" class="px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-bold">×0</span>
+          </button>
+          <div id="knock-rhythm-dots" class="flex items-center justify-center sm:justify-end gap-1.5 text-[10px] font-mono-code text-zinc-500">
+            <span class="knock-dot w-2.5 h-2.5 rounded-full bg-zinc-800 border border-zinc-600 transition-all"></span>
+            <span class="knock-dot w-2.5 h-2.5 rounded-full bg-zinc-800 border border-zinc-600 transition-all"></span>
+            <span class="knock-dot w-2.5 h-2.5 rounded-full bg-zinc-800 border border-zinc-600 transition-all"></span>
+            <span id="knock-rhythm-hint">敲满 3 下解锁第六章木门线索</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       CHAPTER V · 现在
+       “英雄不提当年勇” → 30㎡ 玩 AI + while alive: learn("AI")
+       ===================================================================== -->
+  <section id="chapter-5" data-chapter="V · 现在" class="chapter-section relative z-10 min-h-screen py-36 px-6 flex flex-col justify-center">
+    <div class="max-w-4xl mx-auto w-full space-y-20 relative">
+      <div class="chapter-watermark absolute -top-16 left-0 select-none">30㎡ · AI ERA</div>
+
+      <!-- Chapter Header & Lawted Signature Line -->
+      <div class="story-beat space-y-4 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-sky-950/70 border border-sky-500/40 text-sky-300 font-pixel text-xs">
+          <span>V · 现在</span>
+          <span class="text-[10px] font-mono-code text-sky-200/80">30㎡ AI SANCTUARY</span>
+        </div>
+        <p class="text-sky-400/90 font-editorial italic text-2xl sm:text-3xl">Anyway, that's the old story.</p>
+        <h2 class="text-4xl sm:text-6xl font-bold text-white tracking-tight">
+          “英雄不提当年勇”
+        </h2>
+        <p class="text-xl sm:text-2xl text-zinc-300 font-serif-cn leading-relaxed">
+          过去的徽章都已经收进箱子。现在的我，窝在一间 <strong>30㎡</strong> 的小房间里，像九岁那年一样全神贯注地玩 AI。
+        </p>
+      </div>
+
+      <!-- 30㎡ Room + while alive: learn("AI") Interactive Hub -->
+      <div class="story-beat grid grid-cols-1 lg:grid-cols-12 gap-7 items-stretch">
+
+        <!-- Left: Interactive 30㎡ Isometric AI Room Diorama & Sandbox Card -->
+        <div class="lg:col-span-6 luxury-glass tilt-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between glow-cyan">
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span class="font-mono-code text-xs text-sky-300 bg-sky-950/70 border border-sky-500/30 px-2.5 py-1 rounded-md">
+                🏠 30㎡ ROOM DIORAMA · 5m × 6m
+              </span>
+              <span class="font-mono-code text-xs text-emerald-400 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span data-i18n-zh="30㎡ 小窝 · 算力在线" data-i18n-en="30㎡ Studio · GPU Online">30㎡ 小窝 · 算力在线</span>
+              </span>
+            </div>
+
+            <h3 class="text-xl sm:text-2xl font-bold text-white pt-1" data-i18n-zh="30㎡ 的房间，装得下整个智能宇宙" data-i18n-en="A 30㎡ room big enough for the AI universe.">
+              30㎡ 的房间，装得下整个智能宇宙
+            </h3>
+            <p class="text-xs sm:text-sm text-zinc-300 leading-relaxed font-serif-cn" data-i18n-zh="不需要豪华写字楼。一张升降桌、双联屏、一台轰鸣的算力主机、一张单人床——点击下方 30㎡ 房间微缩景观里的家具，看看我每天折腾 AI 的日常：" data-i18n-en="No fancy corner office needed. A standing desk, dual monitors, a humming GPU tower, and a single bed in 30㎡ — click inside the isometric room below to explore:">
+              不需要豪华写字楼。一张升降桌、双联屏、一台轰鸣的算力主机、一张单人床——点击下方 30㎡ 房间微缩景观里的物品，看看我每天折腾 AI 的日常：
+            </p>
+          </div>
+
+          <!-- Interactive 2.5D Isometric 30㎡ Room Canvas -->
+          <div class="my-4 relative rounded-2xl overflow-hidden bg-[#070b12] border border-sky-500/30 shadow-inner">
+            <canvas id="room-30m2-canvas" width="460" height="230" class="w-full h-[210px] sm:h-[230px] cursor-pointer block"></canvas>
+            <div class="absolute top-2.5 left-3 pointer-events-none flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-black/70 border border-white/10 font-mono-code text-[10px] text-amber-300">
+                📐 6.0m × 5.0m = 30.0㎡
+              </span>
+              <span id="room-zone-badge" class="px-2 py-0.5 rounded bg-sky-950/85 border border-sky-400/40 font-mono-code text-[10px] text-sky-200">
+                🖥️ 点击房间物品互动
+              </span>
+            </div>
+          </div>
+
+          <!-- Interactive 30㎡ Room Equipment Switcher -->
+          <div class="space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" data-ai-topic="Agentic Workflow & MCP" data-room-zone="desk" class="ai-topic-btn text-left p-2.5 rounded-xl bg-sky-950/50 border border-sky-400/40 text-xs font-mono-code text-sky-200 transition-all">
+                🤖 Agent 智能体编排
+              </button>
+              <button type="button" data-ai-topic="LLM Fine-Tuning & RAG" data-room-zone="gpu" class="ai-topic-btn text-left p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-sky-500/40 text-xs font-mono-code text-zinc-300 transition-all">
+                🧠 大模型推理与微调
+              </button>
+              <button type="button" data-ai-topic="AI-Native Product & Vibe Coding" data-room-zone="coffee" class="ai-topic-btn text-left p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-sky-500/40 text-xs font-mono-code text-zinc-300 transition-all">
+                ⚡ AI Native 独立开发
+              </button>
+              <button type="button" data-ai-topic="Multimodal Creative Engine" data-room-zone="window" class="ai-topic-btn text-left p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-sky-500/40 text-xs font-mono-code text-zinc-300 transition-all">
+                🎨 多模态生成实验
+              </button>
+            </div>
+          </div>
+
+          <div id="ai-room-status" class="mt-3 text-xs font-mono-code text-sky-300 bg-black/60 px-3.5 py-2.5 rounded-xl border border-sky-500/25">
+            [30㎡ 实时状态] 正在双联屏工位钻研: Agentic Workflow &amp; MCP
+          </div>
+        </div>
+
+        <!-- Right: Infinite Loop Code Block `while alive: learn("AI")` -->
+        <div class="lg:col-span-6 luxury-glass tilt-card border border-sky-500/25 rounded-3xl overflow-hidden flex flex-col justify-between shadow-2xl">
+          <div class="bg-black/60 px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+              <span class="ml-2 font-mono-code text-xs text-sky-300">now_and_forever.py</span>
+            </div>
+            <button id="boost-ai-loop-btn" type="button"
+                    class="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-mono-code text-xs font-semibold transition-all shadow-lg shadow-sky-600/30">
+              ⚡ 加速迭代 (+1 Epoch)
+            </button>
+          </div>
+
+          <div class="p-6 flex-1 flex flex-col justify-center space-y-5">
+            <div class="bg-sky-950/40 border border-sky-400/35 rounded-2xl p-5 shadow-inner">
+              <p class="font-mono-code text-lg sm:text-2xl text-sky-300 font-bold tracking-tight">
+                <span class="text-pink-400">while</span> alive: learn(<span class="text-amber-300">"AI"</span>)
+              </p>
+            </div>
+
+            <pre class="text-xs sm:text-sm font-mono-code leading-relaxed text-zinc-200 overflow-x-auto"><code><span class="text-pink-400">while</span> alive:
+    learn(<span class="text-amber-200">"AI"</span>)
+    experiment(space=<span class="text-amber-200">"30㎡"</span>, ego=<span class="text-sky-300">0</span>, curiosity=<span class="text-pink-400">float</span>(<span class="text-amber-200">"inf"</span>))
+    <span class="text-zinc-500"># 英雄不提当年勇，永远做新世界的一年级生</span></code></pre>
+          </div>
+
+          <div class="bg-black/80 border-t border-white/10 px-5 py-3.5 font-mono-code text-xs flex items-center justify-between">
+            <span class="text-zinc-400">Loop Status: <strong class="text-emerald-400">RUNNING INFINITELY</strong></span>
+            <span id="ai-epoch-counter" class="text-sky-400 font-semibold">Epochs learned: 1,024</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       CHAPTER VI · 门
+       右键(或点击)开像素木门，3D 转开露出蓝天草地 + "Welcome to my world."
+       ===================================================================== -->
+  <section id="chapter-6" data-chapter="VI · 门" class="chapter-section relative z-10 min-h-screen py-36 px-6 flex flex-col justify-center items-center">
+    <div class="max-w-4xl mx-auto w-full text-center space-y-12 relative">
+
+      <!-- Chapter Header -->
+      <div class="story-beat space-y-4">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-pixel text-xs">
+          <span>VI · 门</span>
+          <span class="text-[10px] font-mono-code text-emerald-200/80">THE HORIZON BEYOND</span>
+        </div>
+        <h2 class="text-4xl sm:text-6xl font-bold text-white tracking-tight leading-[1.12]">
+          If my story interests you,<br />
+          <span class="font-editorial italic font-normal text-emerald-300">just knock and open the door.</span>
+        </h2>
+        <p class="text-base sm:text-xl text-zinc-300 font-serif-cn">
+          还记得第四章埋下的那阵敲门声吗？现在，<strong>右键（或左键点击）</strong>面前这扇像素木门。
+        </p>
+      </div>
+
+      <!-- 3D Pixel Wooden Door + Hidden Blue Sky & Green Grass Meadow Behind It -->
+      <div class="story-beat flex flex-col items-center justify-center">
+        <div class="relative w-full max-w-3xl h-[470px] sm:h-[520px] rounded-3xl overflow-hidden border-2 border-zinc-700/80 shadow-2xl bg-[#07090e] flex items-center justify-center door-perspective-stage">
+
+          <!-- ============================================================
+               LAYER 1 (FULL WORLD REVEAL):
+               Blue Sky, Pixel Clouds, Sunlit Grass Meadow
+               ============================================================ -->
+          <div id="open-world-vista" class="absolute inset-0 flex flex-col items-center justify-between p-6 sm:p-8 transition-all duration-1000 opacity-25 scale-95">
+            <!-- Animated Blue Sky + Clouds + Grass + Fireflies Canvas -->
+            <canvas id="vista-sky-grass-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+
+            <!-- Top Sky Bar + Time-of-Day Switcher -->
+            <div class="relative z-30 flex flex-wrap items-center justify-center gap-2">
+              <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/90 text-sky-950 font-pixel text-[10px] sm:text-xs shadow">
+                <span id="vista-time-badge">☀ CHUNK LOADED · SEED: 2010-2026</span>
+              </div>
+              <button id="cycle-sky-time-btn" type="button" class="px-3.5 py-1 rounded-full bg-black/65 hover:bg-black/85 text-white font-mono-code text-xs border border-white/25 backdrop-blur-md transition-all">
+                🌤 切换天色 (晴空 / 晚霞 / 星夜)
+              </button>
+            </div>
+
+            <!-- Bottom Meadow Caption -->
+            <div class="relative z-30 text-xs font-mono-code text-white drop-shadow bg-black/55 px-4 py-1.5 rounded-full border border-white/15">
+              🌱 蓝天草地与 3D 远景已全面展开 · 点击下方按钮可再次开关木门
+            </div>
+          </div>
+
+          <!-- ============================================================
+               LAYER 2 (DARK STONE ROOM WALL SURROUND BEFORE DOOR OPENS)
+               ============================================================ -->
+          <div id="door-wall-surround" class="absolute inset-0 pointer-events-none transition-opacity duration-1000"
+               style="background: radial-gradient(circle at 50% 54%, transparent 90px, rgba(9, 10, 15, 0.92) 190px, #06070b 100%);">
+          </div>
+
+          <!-- ============================================================
+               LAYER 3 (THE INTERACTIVE 3D MINECRAFT OAK WOODEN DOOR & STONE ARCH)
+               ============================================================ -->
+          <div id="door-frame-assembly" class="door-frame-assembly relative z-20 flex flex-col items-center">
+            <!-- Stone Brick Lintels & Pillars -->
+            <div class="p-3.5 sm:p-4 bg-[#3d3d42] border-4 border-[#1f1f23] rounded-t-xl shadow-2xl relative"
+                 style="box-shadow: 0 25px 70px rgba(0,0,0,0.95), inset 0 2px 0 rgba(255,255,255,0.18);">
+              <!-- Doorway Inner Opening (Sunlit sky shining behind the door leaf) -->
+              <div class="w-48 h-80 sm:w-56 sm:h-96 rounded-t-sm relative overflow-visible door-perspective-stage"
+                   style="background: linear-gradient(180deg, #38bdf8 0%, #bae6fd 62%, #5c9e31 62%, #866043 100%);">
+
+                <!-- Golden Sunlight Rays bursting through doorway when opened -->
+                <div id="doorway-light-rays" class="absolute inset-0 opacity-0 transition-opacity duration-700 pointer-events-none"
+                     style="background: radial-gradient(circle at 50% 45%, rgba(254, 240, 138, 0.75), rgba(56, 189, 248, 0.2) 65%, transparent 90%);">
+                </div>
+
+                <!-- 3D Rotating Pixel Oak Door Leaf -->
+                <div id="pixel-wooden-door"
+                     role="button"
+                     tabindex="0"
+                     aria-label="右键或点击打开像素木门"
+                     class="pixel-door-leaf w-full h-full cursor-pointer relative select-none border-4 border-[#3d2410] bg-[#8f5d32] flex flex-col justify-between p-3">
+
+                  <!-- Top Oak Rail Studs -->
+                  <div class="flex items-center justify-between px-1">
+                    <span class="w-2 h-2 bg-[#4a2e16]"></span>
+                    <span class="font-pixel text-[8px] text-amber-200/70">OAK DOOR</span>
+                    <span class="w-2 h-2 bg-[#4a2e16]"></span>
+                  </div>
+
+                  <!-- Upper Half: Minecraft Oak Door 4-Pane Window Grid with warm glow -->
+                  <div class="grid grid-cols-2 gap-2.5 h-32 sm:h-40 bg-[#4f3016] p-2.5 border-4 border-[#36200d] shadow-inner">
+                    <div class="bg-sky-300/45 border-2 border-[#291708] shadow-inner"></div>
+                    <div class="bg-sky-300/45 border-2 border-[#291708] shadow-inner"></div>
+                    <div class="bg-sky-300/45 border-2 border-[#291708] shadow-inner"></div>
+                    <div class="bg-sky-300/45 border-2 border-[#291708] shadow-inner"></div>
+                  </div>
+
+                  <!-- Middle Lock / Pixel Gold Latch Handle -->
+                  <div class="flex items-center justify-between px-1 my-0.5">
+                    <div class="w-2 h-5 bg-[#4a2e16]"></div>
+                    <div class="flex items-center gap-1">
+                      <div class="w-2 h-2 bg-[#291708]"></div>
+                      <div class="w-4 h-6 bg-[#facc15] border-2 border-[#713f12] shadow-md" title="像素门把手"></div>
+                    </div>
+                  </div>
+
+                  <!-- Lower Half: Carved Solid Oak Planks -->
+                  <div class="h-32 sm:h-40 bg-[#784c27] border-4 border-[#3d2410] p-2 flex flex-col justify-between shadow-inner">
+                    <div class="h-1/2 border-b-2 border-[#4f3016] bg-[#85552c]/80 flex items-center justify-center">
+                      <span class="w-4/5 h-1.5 bg-[#59381b]/70"></span>
+                    </div>
+                    <div class="h-1/2 bg-[#6e4421]/85 flex items-center justify-center">
+                      <span class="font-pixel text-[9px] text-amber-100 bg-black/35 px-2 py-1 rounded">[右击 / 点击开门]</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            <!-- Stone Threshold Step -->
+            <div class="w-60 sm:w-68 h-3.5 bg-[#27272a] border-2 border-[#18181b] rounded-b shadow-lg"></div>
+          </div>
+
+          <!-- ============================================================
+               LAYER 4 (FOREFRONT CLIMAX GREETING BANNER - Z-30 ABOVE FRAME WHEN OPEN):
+               "Welcome to my world."
+               ============================================================ -->
+          <div id="welcome-world-banner" class="absolute z-30 pointer-events-none px-7 py-6 sm:px-9 sm:py-8 rounded-3xl bg-slate-950/80 backdrop-blur-xl border border-emerald-400/40 shadow-2xl max-w-lg transform transition-all duration-1000 scale-75 opacity-0">
+            <p class="font-pixel text-xs text-emerald-300 tracking-widest uppercase mb-2.5">
+              TERRAIN LOADING 100% ▮▮▮▮
+            </p>
+            <h3 class="text-3xl sm:text-5xl font-bold text-white tracking-tight drop-shadow">
+              "Welcome to my world."
+            </h3>
+            <p class="text-sm sm:text-base text-emerald-100 font-serif-cn mt-3" data-i18n-zh="从九岁的方块地形，到 30㎡ 的 AI 房间，再到带你从 0 到 1 转行 FDE——推开门，很高兴认识你。" data-i18n-en="From 2010 voxel terrain to a 30㎡ AI studio, and guiding you 0-to-1 into an FDE career — glad you opened the door.">
+              从九岁的方块地形，到 30㎡ 的 AI 房间，再到带你从 0 到 1 转行 FDE——推开门，很高兴认识你。
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Door Interactive Controls & Status Bar -->
+        <div class="mt-7 flex flex-wrap items-center justify-center gap-3.5">
+          <button id="knock-door-action-btn" type="button"
+                  class="px-5 py-3 rounded-2xl bg-amber-600/90 hover:bg-amber-500 text-white font-mono-code text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shadow-lg">
+            <span>✊ 先敲敲门 (Knock)</span>
+          </button>
+
+          <button id="toggle-door-action-btn" type="button"
+                  class="px-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-mono-code text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shadow-xl shadow-emerald-600/30">
+            <span id="toggle-door-btn-text">🚪 右键 / 点击推开木门</span>
+          </button>
+        </div>
+
+        <p id="door-hint-caption" class="mt-3 text-xs font-mono-code text-zinc-400">
+          💡 支持在木门上直接按下鼠标<strong>右键</strong>（Minecraft 原生交互）或<strong>左键点击</strong>推开大门。
+        </p>
+      </div>
+
+      <!-- =================================================================
+           NEW CLIMAX MISSION: 从 0 到 1 带大家转行 FDE 工程师 (Forward Deployed Engineer)
+           ================================================================= -->
+      <div class="story-beat luxury-glass tilt-card rounded-3xl p-7 sm:p-10 text-left border border-emerald-500/35 glow-green mt-14 space-y-7">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+          <div class="space-y-1.5">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 font-mono-code text-xs">
+              <span>🚀 NEXT CHAPTER · 推开门后的使命</span>
+            </div>
+            <h3 class="text-2xl sm:text-4xl font-bold text-white tracking-tight pt-1">
+              从 0 到 1，带你转行 <span class="text-emerald-400">FDE 工程师</span>
+            </h3>
+            <p class="text-sm sm:text-base text-zinc-300 font-serif-cn">
+              走过暂停四年的迷茫，敲满 180 天的 Git 小绿格子，再到 30㎡ 房间里日夜折腾 AI——现在推开这扇门，我想把这条可复制的路径分享给你，手把手带大家<strong>从 0 到 1 转行 FDE（Forward Deployed Engineer · 前沿部署/AI 落地工程师）</strong>。
+            </p>
+          </div>
+
+          <button id="join-fde-mission-btn" type="button"
+                  class="shrink-0 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-mono-code text-xs sm:text-sm font-bold shadow-xl shadow-emerald-600/30 transition-all">
+            ⚡ 领取 0→1 FDE 转行路线图
+          </button>
+        </div>
+
+        <!-- Interactive 4-Step FDE 0-to-1 Roadmap Tabs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <button type="button" data-fde-stage="0" class="fde-stage-btn text-left p-4 rounded-2xl bg-emerald-950/50 border border-emerald-400/50 transition-all space-y-1.5">
+            <span class="text-[11px] font-mono-code text-emerald-300">STAGE 0 → 0.3</span>
+            <p class="text-sm font-bold text-white">01 · 重建工程与代码自信</p>
+            <p class="text-xs text-zinc-400">哪怕零基础或经历断档，先用 Git 小绿格子把 Python / 全栈工程底座跑通。</p>
+          </button>
+
+          <button type="button" data-fde-stage="1" class="fde-stage-btn text-left p-4 rounded-2xl bg-zinc-900/75 border border-white/10 hover:border-emerald-400/40 transition-all space-y-1.5">
+            <span class="text-[11px] font-mono-code text-sky-300">STAGE 0.3 → 0.6</span>
+            <p class="text-sm font-bold text-white">02 · AI Agent 与 RAG 实战</p>
+            <p class="text-xs text-zinc-400">不死磕纯理论公式，聚焦大模型编排、MCP 工具链与可落地的 AI 系统构建。</p>
+          </button>
+
+          <button type="button" data-fde-stage="2" class="fde-stage-btn text-left p-4 rounded-2xl bg-zinc-900/75 border border-white/10 hover:border-emerald-400/40 transition-all space-y-1.5">
+            <span class="text-[11px] font-mono-code text-amber-300">STAGE 0.6 → 0.9</span>
+            <p class="text-sm font-bold text-white">03 · FDE 真实业务场景交付</p>
+            <p class="text-xs text-zinc-400">深入业务一线拆解痛点，把 AI 原型变成真正能跑、能交付、能创造价值的工程闭环。</p>
+          </button>
+
+          <button type="button" data-fde-stage="3" class="fde-stage-btn text-left p-4 rounded-2xl bg-zinc-900/75 border border-white/10 hover:border-emerald-400/40 transition-all space-y-1.5">
+            <span class="text-[11px] font-mono-code text-emerald-300">STAGE 0.9 → 1.0</span>
+            <p class="text-sm font-bold text-white">04 · 作品集突围与顺利就业</p>
+            <p class="text-xs text-zinc-400">打磨属于你的硬核 AI 项目与面试表达，踏实拿下属于你的 FDE Offer。</p>
+          </button>
+        </div>
+
+        <!-- FDE Live Terminal Output -->
+        <div class="bg-black/75 border border-white/10 rounded-2xl px-5 py-3.5 font-mono-code text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <span id="fde-stage-detail" class="text-emerald-300">
+            &gt; [FDE_BOOTCAMP] 当前阶段 01：哪怕曾按下暂停键，今天开始敲下第一个 Git 小绿格，我带你从 0 到 1 走通 FDE 之路。
+          </span>
+          <span class="text-zinc-500 shrink-0">Role: Forward Deployed Engineer</span>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           LAWTED.TECH STYLE FILM CREDITS & CONNECT SECTION
+           ================================================================= -->
+      <div class="story-beat pt-24 pb-12 border-t border-white/10 mt-16 space-y-12 text-center">
+        <div class="space-y-3">
+          <p class="font-mono-code text-xs uppercase tracking-[0.3em] text-zinc-500">End Credits</p>
+          <h3 class="text-2xl sm:text-4xl font-editorial italic text-white">The terrain is still generating, and so are we.</h3>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-6 max-w-3xl mx-auto text-xs font-mono-code">
+          <div class="space-y-1">
+            <p class="text-zinc-500 uppercase">Directed &amp; Lived by</p>
+            <p class="text-zinc-200 font-semibold text-sm">Hexin</p>
+          </div>
+          <div class="space-y-1">
+            <p class="text-zinc-500 uppercase">First Spawn</p>
+            <p class="text-emerald-400 font-semibold text-sm">2010 (Age 9)</p>
+          </div>
+          <div class="space-y-1">
+            <p class="text-zinc-500 uppercase">Respawn Route</p>
+            <p class="text-amber-300 font-semibold text-sm">SAP → Baidu</p>
+          </div>
+          <div class="space-y-1">
+            <p class="text-zinc-500 uppercase">Current Lab</p>
+            <p class="text-sky-300 font-semibold text-sm">30㎡ · Learning AI</p>
+          </div>
+          <div class="space-y-1 col-span-2 sm:col-span-1">
+            <p class="text-zinc-500 uppercase">Sound &amp; 3D Engine</p>
+            <p class="text-emerald-300 font-semibold text-sm">C418 Synth + Three.js</p>
+          </div>
+        </div>
+
+        <!-- Copy Card / Say Hi Actions -->
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-4">
+          <button id="copy-story-card-btn" type="button"
+                  class="px-6 py-3 rounded-full luxury-glass hover:border-white/25 text-xs font-mono-code text-zinc-200 transition-all">
+            📋 复制我的代码名片 (Copy Bio Snippet)
+          </button>
+          <button id="back-to-top-btn" type="button"
+                  class="px-6 py-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono-code text-zinc-400 hover:text-white transition-all">
+            ↑ 回到 2010 重新加载
+          </button>
+        </div>
+
+        <p class="text-[11px] font-mono-code text-zinc-600">
+          Crafted with Three.js WebGL Voxel Choreography &amp; Multi-Harmonic Felt Piano · Inspired by lawted.tech
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       INLINE JAVASCRIPT:
+       1. STUDIO-GRADE C418 CONCERT FELT PIANO + WARM PAD + STEREO DELAY
+       2. THREE.JS 3D WEBGL VOXEL WORLD CHOREOGRAPHY ACROSS ALL 6 CHAPTERS
+       3. 3D PERSPECTIVE TILT CARDS & INTERACTIVE ARTIFACTS
+       ===================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // -------------------------------------------------------------------
+      // 1. STUDIO-GRADE C418 FELT PIANO + WARM ANALOG PAD SYNTHESIZER
+      // -------------------------------------------------------------------
+      let soundEnabled = true;
+      let audioCtx = null;
+      let masterFilter = null;
+      let reverbNode = null;
+      let stereoDelayL = null;
+      let stereoDelayR = null;
+      let bgmPlaying = false;
+      let bgmTimeoutId = null;
+      let currentTrackIndex = 0;
+      let currentStepIndex = 0;
+      let activeChapterId = 'prologue';
+
+      let isAutoScrolling = false;
+      let autoScrollRaf = null;
+      let curiosityValue = 1024;
+      let knockCount = 0;
+      let aiEpochs = 1024;
+      let isDoorOpen = false;
+      let byteViewActive = false;
+      let vistaSkyMode = 0;
+
+      // Full chromatic/diatonic frequency table across 5 octaves
+      const NOTE_FREQS = {
+        'F#2': 92.50, 'G2': 98.00, 'A2': 110.00, 'B2': 123.47,
+        'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00, 'G#3': 207.65, 'A3': 220.00, 'B3': 246.94,
+        'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30, 'A4': 440.00, 'B4': 493.88,
+        'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'E5': 659.25, 'F#5': 739.99, 'G5': 783.99, 'G#5': 830.61, 'A5': 880.00, 'B5': 987.77
+      };
+
+      // Official C418 - Subwoofer Lullaby Score + Sweden + Wet Hands
+      const MC_TRACKS = [
+        {
+          name: 'C418 · Subwoofer Lullaby',
+          useOfficialStream: true,
+          baseStepMs: 1600,
+          // Exact C418 Subwoofer Lullaby in G Major / C Major:
+          // Deep warm subwoofer bass swell + repeating C4-B4-G4-D4 ostinato + nostalgic melody
+          steps: [
+            { pad: 'C3', chord: ['C3', 'G3', 'E4'], melody: [{ n: 'C4', d: 0.0, v: 0.075 }, { n: 'B4', d: 0.38, v: 0.085 }, { n: 'G4', d: 0.76, v: 0.08 }, { n: 'G4', d: 1.15, v: 0.07 }] },
+            { pad: 'G2', chord: ['G2', 'D3', 'B3'], melody: [{ n: 'D4', d: 0.0, v: 0.075 }, { n: 'C4', d: 0.38, v: 0.075 }, { n: 'B4', d: 0.76, v: 0.085 }, { n: 'G4', d: 1.15, v: 0.08 }] },
+            { pad: 'A2', chord: ['A2', 'E3', 'C4'], melody: [{ n: 'D4', d: 0.0, v: 0.075 }, { n: 'E4', d: 0.42, v: 0.085 }, { n: 'G4', d: 0.88, v: 0.08 }] },
+            { pad: 'E3', chord: ['E3', 'B3', 'G4'], melody: [{ n: 'B4', d: 0.2, v: 0.085 }, { n: 'D5', d: 0.65, v: 0.09 }, { n: 'B4', d: 1.1, v: 0.075 }] },
+            { pad: 'C3', chord: ['C3', 'G3', 'E4'], melody: [{ n: 'C5', d: 0.0, v: 0.085 }, { n: 'B4', d: 0.38, v: 0.085 }, { n: 'G4', d: 0.76, v: 0.08 }, { n: 'E4', d: 1.15, v: 0.075 }] },
+            { pad: 'G2', chord: ['G2', 'D3', 'B3'], melody: [{ n: 'D4', d: 0.0, v: 0.075 }, { n: 'G4', d: 0.42, v: 0.08 }, { n: 'B4', d: 0.85, v: 0.085 }] },
+            { pad: 'F3', chord: ['F3', 'C4', 'A4'], melody: [{ n: 'E5', d: 0.2, v: 0.09 }, { n: 'D5', d: 0.68, v: 0.085 }, { n: 'B4', d: 1.12, v: 0.075 }] },
+            { pad: 'G2', chord: ['G2', 'D3', 'G3', 'B3'], melody: [{ n: 'G4', d: 0.35, v: 0.08 }, { n: 'D4', d: 0.9, v: 0.07 }] }
+          ]
+        },
+        {
+          name: 'C418 · Sweden',
+          baseStepMs: 1650,
+          steps: [
+            { pad: 'D3', chord: ['D3', 'A3', 'E4', 'F#4'], melody: [{ n: 'A4', d: 0.42, v: 0.085 }] },
+            { pad: 'E3', chord: ['E3', 'B3', 'G#4'], melody: [{ n: 'B4', d: 0.45, v: 0.08 }, { n: 'C#5', d: 1.05, v: 0.065 }] },
+            { pad: 'F#3', chord: ['F#3', 'C#4', 'A4'], melody: [{ n: 'E5', d: 0.38, v: 0.09 }, { n: 'C#5', d: 0.95, v: 0.07 }] },
+            { pad: 'A2', chord: ['A2', 'E3', 'C#4', 'E4'], melody: [{ n: 'B4', d: 0.42, v: 0.08 }, { n: 'A4', d: 1.0, v: 0.065 }] },
+            { pad: 'D3', chord: ['D3', 'A3', 'F#4'], melody: [{ n: 'F#5', d: 0.38, v: 0.09 }, { n: 'E5', d: 0.95, v: 0.075 }] },
+            { pad: 'E3', chord: ['E3', 'B3', 'G#4'], melody: [{ n: 'C#5', d: 0.42, v: 0.08 }, { n: 'B4', d: 1.0, v: 0.07 }] },
+            { pad: 'F#3', chord: ['F#3', 'C#4', 'E4', 'A4'], melody: [{ n: 'A4', d: 0.4, v: 0.085 }, { n: 'G#4', d: 1.05, v: 0.06 }] },
+            { pad: 'D3', chord: ['D3', 'A3', 'D4', 'F#4'], melody: [{ n: 'F#4', d: 0.48, v: 0.075 }] }
+          ]
+        },
+        {
+          name: 'C418 · Wet Hands',
+          baseStepMs: 1320,
+          steps: [
+            { pad: 'A2', chord: ['A2', 'E3', 'A3', 'C#4'], melody: [{ n: 'E4', d: 0.24, v: 0.08 }, { n: 'A4', d: 0.52, v: 0.085 }, { n: 'B4', d: 0.82, v: 0.08 }] },
+            { pad: 'B2', chord: ['B2', 'F#3', 'B3', 'D4'], melody: [{ n: 'C#5', d: 0.26, v: 0.09 }, { n: 'B4', d: 0.65, v: 0.075 }, { n: 'A4', d: 0.95, v: 0.07 }] },
+            { pad: 'D3', chord: ['D3', 'A3', 'D4', 'F#4'], melody: [{ n: 'E4', d: 0.25, v: 0.075 }, { n: 'F#4', d: 0.58, v: 0.08 }, { n: 'A4', d: 0.88, v: 0.085 }] },
+            { pad: 'E3', chord: ['E3', 'B3', 'E4', 'G#4'], melody: [{ n: 'B4', d: 0.28, v: 0.085 }, { n: 'E5', d: 0.72, v: 0.09 }] },
+            { pad: 'F#3', chord: ['F#3', 'C#4', 'F#4', 'A4'], melody: [{ n: 'C#5', d: 0.26, v: 0.085 }, { n: 'B4', d: 0.62, v: 0.075 }, { n: 'A4', d: 0.92, v: 0.07 }] },
+            { pad: 'D3', chord: ['D3', 'A3', 'F#4'], melody: [{ n: 'A4', d: 0.3, v: 0.08 }, { n: 'F#4', d: 0.75, v: 0.07 }] }
+          ]
+        }
+      ];
+
+      function getAudioContext() {
+        if (!soundEnabled) return null;
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+
+            // Dynamics Compressor for silky studio mastering
+            const compressor = audioCtx.createDynamicsCompressor();
+            compressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
+            compressor.knee.setValueAtTime(24, audioCtx.currentTime);
+            compressor.ratio.setValueAtTime(4, audioCtx.currentTime);
+            compressor.attack.setValueAtTime(0.01, audioCtx.currentTime);
+            compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+            // Master Filter (reacts to Chapter III Paused mode)
+            masterFilter = audioCtx.createBiquadFilter();
+            masterFilter.type = 'lowpass';
+            masterFilter.frequency.setValueAtTime(3200, audioCtx.currentTime);
+            masterFilter.Q.setValueAtTime(0.65, audioCtx.currentTime);
+
+            // Stereo Ping-Pong Delay for C418 spatial depth
+            stereoDelayL = audioCtx.createDelay(2.0);
+            stereoDelayR = audioCtx.createDelay(2.0);
+            stereoDelayL.delayTime.setValueAtTime(0.36, audioCtx.currentTime);
+            stereoDelayR.delayTime.setValueAtTime(0.54, audioCtx.currentTime);
+
+            const delayFb = audioCtx.createGain();
+            delayFb.gain.setValueAtTime(0.26, audioCtx.currentTime);
+            stereoDelayL.connect(stereoDelayR);
+            stereoDelayR.connect(delayFb);
+            delayFb.connect(stereoDelayL);
+
+            const delayWet = audioCtx.createGain();
+            delayWet.gain.setValueAtTime(0.22, audioCtx.currentTime);
+
+            // Concert Hall Algorithmic Reverb (3.6 seconds lush tail)
+            reverbNode = createWarmReverb(audioCtx, 3.6, 2.6);
+            const wetGain = audioCtx.createGain();
+            wetGain.gain.setValueAtTime(0.48, audioCtx.currentTime);
+
+            const dryGain = audioCtx.createGain();
+            dryGain.gain.setValueAtTime(0.72, audioCtx.currentTime);
+
+            masterFilter.connect(dryGain);
+            masterFilter.connect(reverbNode);
+            masterFilter.connect(stereoDelayL);
+
+            stereoDelayL.connect(delayWet);
+            stereoDelayR.connect(delayWet);
+
+            reverbNode.connect(wetGain);
+
+            dryGain.connect(compressor);
+            wetGain.connect(compressor);
+            delayWet.connect(compressor);
+            compressor.connect(audioCtx.destination);
+          }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(function () {});
+        }
+        return audioCtx;
+      }
+
+      function createWarmReverb(ctx, duration, decay) {
+        const rate = ctx.sampleRate;
+        const length = Math.floor(rate * duration);
+        const impulse = ctx.createBuffer(2, length, rate);
+        for (let ch = 0; ch < 2; ch++) {
+          const channelData = impulse.getChannelData(ch);
+          for (let i = 0; i < length; i++) {
+            const env = Math.pow(1 - i / length, decay);
+            channelData[i] = (Math.random() * 2 - 1) * env * 0.85;
+          }
+        }
+        const convolver = ctx.createConvolver();
+        convolver.buffer = impulse;
+        return convolver;
+      }
+
+      // Multi-Harmonic Felt Piano Voice with Key-Hammer Transient & Stereo Panning
+      function playFeltPianoNote(noteName, delaySec, durationSec, velocity) {
+        const ctx = getAudioContext();
+        if (!ctx || !masterFilter) return;
+        const freq = NOTE_FREQS[noteName];
+        if (!freq) return;
+
+        const now = ctx.currentTime + (delaySec || 0);
+        const dur = durationSec || 3.4;
+        const vel = velocity || 0.07;
+
+        // Stereo pan based on pitch (low notes slightly left, high notes right)
+        const panNode = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+        if (panNode) {
+          const normPitch = Math.min(1, Math.max(-1, ((freq - 261.63) / 500)));
+          panNode.pan.setValueAtTime(normPitch * 0.45, now);
+        }
+
+        // Dynamic Felt Hammer Filter (bright on attack, mellows rapidly like C418 upright felt piano)
+        const voiceFilter = ctx.createBiquadFilter();
+        voiceFilter.type = 'lowpass';
+        voiceFilter.frequency.setValueAtTime(Math.min(4800, freq * 5.5), now);
+        voiceFilter.frequency.exponentialRampToValueAtTime(Math.max(280, freq * 1.35), now + dur * 0.78);
+
+        const voiceEnv = ctx.createGain();
+        voiceEnv.gain.setValueAtTime(0.0001, now);
+        voiceEnv.gain.linearRampToValueAtTime(vel, now + 0.028);
+        voiceEnv.gain.exponentialRampToValueAtTime(vel * 0.48, now + 0.38);
+        voiceEnv.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+        // 1. Fundamental Sine
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(freq, now);
+
+        // 2. Warm 2nd Harmonic (Triangle with slight piano string inharmonicity)
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(freq * 2.0015, now);
+        const g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0.24, now);
+        g2.gain.exponentialRampToValueAtTime(0.015, now + dur * 0.45);
+
+        // 3. Soft 3rd Harmonic Bell Overtone
+        const osc3 = ctx.createOscillator();
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(freq * 3.004, now);
+        const g3 = ctx.createGain();
+        g3.gain.setValueAtTime(0.08, now);
+        g3.gain.exponentialRampToValueAtTime(0.002, now + 0.25);
+
+        osc1.connect(voiceFilter);
+        osc2.connect(g2);
+        g2.connect(voiceFilter);
+        osc3.connect(g3);
+        g3.connect(voiceFilter);
+
+        voiceFilter.connect(voiceEnv);
+        if (panNode) {
+          voiceEnv.connect(panNode);
+          panNode.connect(masterFilter);
+        } else {
+          voiceEnv.connect(masterFilter);
+        }
+
+        osc1.start(now);
+        osc2.start(now);
+        osc3.start(now);
+        osc1.stop(now + dur + 0.06);
+        osc2.stop(now + dur + 0.06);
+        osc3.stop(now + 0.3);
+      }
+
+      // Warm C418 Analog Pad Swell Underneath Piano Chords
+      function playWarmPadSwell(noteName, durationSec) {
+        const ctx = getAudioContext();
+        if (!ctx || !masterFilter) return;
+        const freq = NOTE_FREQS[noteName];
+        if (!freq) return;
+
+        const now = ctx.currentTime;
+        const dur = durationSec || 2.8;
+
+        const oscA = ctx.createOscillator();
+        const oscB = ctx.createOscillator();
+        oscA.type = 'sine';
+        oscB.type = 'triangle';
+        oscA.frequency.setValueAtTime(freq, now);
+        oscB.frequency.setValueAtTime(freq * 1.5, now); // Fifth harmony
+        oscB.detune.setValueAtTime(-6, now);
+
+        const padFilter = ctx.createBiquadFilter();
+        padFilter.type = 'lowpass';
+        padFilter.frequency.setValueAtTime(420, now);
+
+        const padEnv = ctx.createGain();
+        padEnv.gain.setValueAtTime(0.0001, now);
+        padEnv.gain.linearRampToValueAtTime(0.028, now + dur * 0.45);
+        padEnv.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+        oscA.connect(padFilter);
+        oscB.connect(padFilter);
+        padFilter.connect(padEnv);
+        padEnv.connect(masterFilter);
+
+        oscA.start(now);
+        oscB.start(now);
+        oscA.stop(now + dur + 0.05);
+        oscB.stop(now + dur + 0.05);
+      }
+
+      function isOfficialAudioStreaming() {
+        const audioEl = document.getElementById('official-subwoofer-audio');
+        return Boolean(
+          audioEl &&
+          currentTrackIndex === 0 &&
+          !audioEl.paused &&
+          !audioEl.ended &&
+          audioEl.currentTime > 0.05 &&
+          audioEl.readyState >= 2
+        );
+      }
+
+      function scheduleNextBgmStep() {
+        if (!bgmPlaying || !soundEnabled) return;
+        const track = MC_TRACKS[currentTrackIndex];
+        if (!track) return;
+
+        // If the official Subwoofer Lullaby MP3 stream is actively playing, let it shine without synth overlap
+        if (isOfficialAudioStreaming()) {
+          bgmTimeoutId = setTimeout(scheduleNextBgmStep, 1000);
+          return;
+        }
+
+        const step = track.steps[currentStepIndex % track.steps.length];
+        currentStepIndex = (currentStepIndex + 1) % track.steps.length;
+
+        // 1. Deep Subwoofer Lullaby Bass Swell
+        if (step.pad) {
+          playWarmPadSwell(step.pad, 3.2);
+        }
+
+        // 2. Expressive rolled chord arpeggio
+        step.chord.forEach(function (note, idx) {
+          const rubato = idx * 0.14 + (Math.random() * 0.02);
+          playFeltPianoNote(note, rubato, 3.6, idx === 0 ? 0.065 : 0.05);
+        });
+
+        // 3. Lyrical Subwoofer Lullaby melody notes
+        if (step.melody) {
+          step.melody.forEach(function (m) {
+            playFeltPianoNote(m.n, m.d, 3.2, m.v);
+          });
+        }
+
+        const isPausedChapter = document.body.classList.contains('chapter-paused-mode');
+        const nextDelay = isPausedChapter ? track.baseStepMs * 1.25 : track.baseStepMs;
+        bgmTimeoutId = setTimeout(scheduleNextBgmStep, nextDelay);
+      }
+
+      function updateBgmUI() {
+        const track = MC_TRACKS[currentTrackIndex];
+        const labelEl = document.getElementById('bgm-track-label');
+        const discEl = document.getElementById('bgm-disc-icon');
+        const eqEl = document.getElementById('bgm-eq-bars');
+        const bottomHint = document.getElementById('mc-bgm-nowplaying');
+
+        if (labelEl && track) {
+          labelEl.textContent = bgmPlaying ? track.name : '点击播放 MC 钢琴';
+        }
+        if (discEl) {
+          discEl.classList.toggle('disc-spinning', bgmPlaying && soundEnabled);
+        }
+        if (eqEl) {
+          eqEl.classList.toggle('eq-playing', bgmPlaying && soundEnabled);
+        }
+        if (bottomHint && track) {
+          bottomHint.textContent = (bgmPlaying && soundEnabled)
+            ? ('♪ Playing: ' + track.name)
+            : '♪ Click anywhere for C418 Piano';
+        }
+
+        document.querySelectorAll('.bgm-preset-btn').forEach(function (btn) {
+          const idx = Number(btn.getAttribute('data-bgm-track'));
+          if (idx === currentTrackIndex) {
+            btn.className = 'bgm-preset-btn px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition-all';
+          } else {
+            btn.className = 'bgm-preset-btn px-3 py-1 rounded-lg hover:bg-white/5 text-zinc-400 border border-transparent transition-all';
+          }
+        });
+      }
+
+      function startBgm(trackIdx) {
+        if (typeof trackIdx === 'number') {
+          currentTrackIndex = trackIdx % MC_TRACKS.length;
+          currentStepIndex = 0;
+        }
+        soundEnabled = true;
+        getAudioContext();
+        bgmPlaying = true;
+
+        const audioEl = document.getElementById('official-subwoofer-audio');
+        if (audioEl) {
+          if (currentTrackIndex === 0) {
+            audioEl.volume = document.body.classList.contains('chapter-paused-mode') ? 0.35 : 0.85;
+            audioEl.play().catch(function () {
+              // Seamless fallback to built-in C418 Subwoofer Lullaby score synth if external stream is blocked
+            });
+          } else {
+            audioEl.pause();
+          }
+        }
+
+        if (bgmTimeoutId) clearTimeout(bgmTimeoutId);
+        scheduleNextBgmStep();
+        updateBgmUI();
+      }
+
+      function stopBgm() {
+        bgmPlaying = false;
+        const audioEl = document.getElementById('official-subwoofer-audio');
+        if (audioEl) {
+          audioEl.pause();
+        }
+        if (bgmTimeoutId) {
+          clearTimeout(bgmTimeoutId);
+          bgmTimeoutId = null;
+        }
+        updateBgmUI();
+      }
+
+      function toggleBgm() {
+        if (bgmPlaying) {
+          stopBgm();
+          showToast('已暂停 C418 钢琴原声', '⏸');
+        } else {
+          startBgm(currentTrackIndex);
+          showToast('正在播放: ' + MC_TRACKS[currentTrackIndex].name, '💿');
+        }
+      }
+
+      // Auto-unlock C418 Piano on first user click anywhere on page if soundEnabled
+      let firstGestureHandled = false;
+      window.addEventListener('pointerdown', function () {
+        if (!firstGestureHandled) {
+          firstGestureHandled = true;
+          if (soundEnabled && !bgmPlaying) {
+            startBgm(currentTrackIndex);
+          }
+        }
+      }, { once: true });
+
+      function playBlockPop(freqBase) {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freqBase || 320, now);
+        osc.frequency.exponentialRampToValueAtTime((freqBase || 320) * 1.45, now + 0.075);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      function playWoodKnockSound() {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        [0, 0.16].forEach(function (offset) {
+          const now = ctx.currentTime + offset;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(145, now);
+          osc.frequency.exponentialRampToValueAtTime(52, now + 0.09);
+          gain.gain.setValueAtTime(0.34, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.11);
+        });
+      }
+
+      function playDoorOpenSound(opening) {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        const creakOsc = ctx.createOscillator();
+        const creakGain = ctx.createGain();
+        creakOsc.type = 'sawtooth';
+        creakOsc.frequency.setValueAtTime(opening ? 190 : 280, now);
+        creakOsc.frequency.linearRampToValueAtTime(opening ? 340 : 150, now + 0.22);
+        creakGain.gain.setValueAtTime(0.055, now);
+        creakGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        creakOsc.connect(creakGain);
+        creakGain.connect(ctx.destination);
+        creakOsc.start(now);
+        creakOsc.stop(now + 0.26);
+
+        if (opening) {
+          ['D3', 'A3', 'F#4', 'A4', 'C#5', 'E5'].forEach(function (note, idx) {
+            playFeltPianoNote(note, 0.1 + idx * 0.09, 3.8, 0.085);
+          });
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // 2. THREE.JS 3D WEBGL VOXEL WORLD STAGE (Scroll & Chapter Choreography)
+      // -------------------------------------------------------------------
+      function initThreeJsWorld() {
+        const canvas = document.getElementById('webgl-stage-canvas');
+        if (!canvas || typeof THREE === 'undefined') return;
+
+        const renderer = new THREE.WebGLRenderer({
+          canvas: canvas,
+          alpha: true,
+          antialias: true
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x040508, 0.032);
+
+        const camera = new THREE.PerspectiveCamera(
+          52,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          150
+        );
+        camera.position.set(0, 5.5, 16);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xa7ff4f, 1.15);
+        dirLight.position.set(12, 22, 14);
+        scene.add(dirLight);
+
+        const pointLight = new THREE.PointLight(0x38bdf8, 1.4, 38);
+        pointLight.position.set(-8, 6, 4);
+        scene.add(pointLight);
+
+        // Voxel Terrain & Floating Blocks Group
+        const worldGroup = new THREE.Group();
+        scene.add(worldGroup);
+
+        // Procedural 16x16 Minecraft Mineral Block Pixel Texture Generator (Diamond / Gold / Emerald)
+        function createMineralBlockTexture(palette) {
+          const c = document.createElement('canvas');
+          c.width = 64;
+          c.height = 64;
+          const g = c.getContext('2d');
+          g.imageSmoothingEnabled = false;
+          const p = 4; // 16x16 grid scaled by 4 = 64x64
+
+          for (let r = 0; r < 16; r++) {
+            for (let col = 0; col < 16; col++) {
+              let color = palette.mid;
+              // Outer dark border frame
+              if (r === 0 || col === 0 || r === 15 || col === 15) {
+                color = palette.border;
+              } else if (r === 1 || col === 1) {
+                // Top-left inner specular bevel
+                color = palette.light;
+              } else if (r === 14 || col === 14) {
+                // Bottom-right inner shadow bevel
+                color = palette.dark;
+              } else if ((r >= 3 && r <= 12 && col >= 3 && col <= 12) && (r === 3 || col === 3)) {
+                // Inner gem/ingot facet highlight
+                color = palette.shine;
+              } else if ((r + col) % 5 === 0) {
+                color = palette.light;
+              } else if ((r * 3 + col) % 7 === 0) {
+                color = palette.dark;
+              }
+              g.fillStyle = color;
+              g.fillRect(col * p, r * p, p, p);
+            }
+          }
+
+          const tex = new THREE.CanvasTexture(c);
+          tex.magFilter = THREE.NearestFilter;
+          tex.minFilter = THREE.NearestFilter;
+          return tex;
+        }
+
+        // 1. 💎 Diamond Block (钻石块)
+        const texDiamond = createMineralBlockTexture({
+          border: '#0e7490',
+          dark: '#06b6d4',
+          mid: '#22d3ee',
+          light: '#67e8f9',
+          shine: '#ecfeff'
+        });
+
+        // 2. 🟨 Gold Block (黄金块)
+        const texGold = createMineralBlockTexture({
+          border: '#b45309',
+          dark: '#d97706',
+          mid: '#facc15',
+          light: '#fde047',
+          shine: '#fef9c3'
+        });
+
+        // 3. 🟢 Emerald Block (绿宝石块)
+        const texEmerald = createMineralBlockTexture({
+          border: '#065f46',
+          dark: '#059669',
+          mid: '#10b981',
+          light: '#34d399',
+          shine: '#d1fae5'
+        });
+
+        const boxGeo = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+        const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+
+        const matDiamond = new THREE.MeshStandardMaterial({
+          map: texDiamond,
+          emissive: 0x083344,
+          emissiveIntensity: 0.45,
+          roughness: 0.2,
+          metalness: 0.45
+        });
+        const matGold = new THREE.MeshStandardMaterial({
+          map: texGold,
+          emissive: 0x451a03,
+          emissiveIntensity: 0.45,
+          roughness: 0.25,
+          metalness: 0.55
+        });
+        const matEmerald = new THREE.MeshStandardMaterial({
+          map: texEmerald,
+          emissive: 0x064e3b,
+          emissiveIntensity: 0.45,
+          roughness: 0.22,
+          metalness: 0.45
+        });
+
+        const wireDiamond = new THREE.LineBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.35 });
+        const wireGold = new THREE.LineBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.35 });
+        const wireEmerald = new THREE.LineBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.35 });
+
+        const voxels = [];
+        const gridSize = 11;
+        const half = Math.floor(gridSize / 2);
+
+        for (let gx = -half; gx <= half; gx++) {
+          for (let gz = -half; gz <= half; gz++) {
+            const dist = Math.sqrt(gx * gx + gz * gz);
+            if (dist > 6.2) continue;
+
+            const baseHeight = Math.round(Math.sin(gx * 0.55) * Math.cos(gz * 0.55) * 1.8);
+            const mod = Math.abs(gx * 3 + gz * 5) % 3;
+            const mat = mod === 0 ? matDiamond : (mod === 1 ? matGold : matEmerald);
+            const wMat = mod === 0 ? wireDiamond : (mod === 1 ? wireGold : wireEmerald);
+
+            const mesh = new THREE.Mesh(boxGeo, mat);
+            const wire = new THREE.LineSegments(edgesGeo, wMat);
+            mesh.add(wire);
+
+            const homeX = gx * 1.18;
+            const homeY = baseHeight - 2.6;
+            const homeZ = gz * 1.18 - 2;
+
+            mesh.position.set(homeX, homeY - 8, homeZ);
+            worldGroup.add(mesh);
+
+            voxels.push({
+              mesh: mesh,
+              homeX: homeX,
+              homeY: homeY,
+              homeZ: homeZ,
+              scatterX: homeX * 1.85 + (Math.random() - 0.5) * 6,
+              scatterY: homeY + 4 + Math.random() * 6,
+              scatterZ: homeZ * 1.5 + (Math.random() - 0.5) * 6,
+              phase: Math.random() * Math.PI * 2,
+              speed: 0.6 + Math.random() * 0.8
+            });
+          }
+        }
+
+        let targetMouseX = 0;
+        let targetMouseY = 0;
+        window.addEventListener('mousemove', function (e) {
+          targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+          targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        }, { passive: true });
+
+        window.addEventListener('resize', function () {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        let clock = 0;
+        function animate3D() {
+          const isPaused = document.body.classList.contains('chapter-paused-mode');
+          clock += isPaused ? 0.0015 : 0.012;
+
+          const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+          const scrollNorm = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+
+          // Camera smooth orbit & mouse parallax
+          const camAngle = scrollNorm * Math.PI * 0.85 + targetMouseX * 0.22;
+          const camRadius = 15 - scrollNorm * 3.5;
+          camera.position.x += (Math.sin(camAngle) * camRadius - camera.position.x) * 0.05;
+          camera.position.z += (Math.cos(camAngle) * camRadius - camera.position.z) * 0.05;
+          camera.position.y += ((4.8 - targetMouseY * 1.4 + Math.sin(scrollNorm * Math.PI) * 2.2) - camera.position.y) * 0.05;
+          camera.lookAt(0, -0.5, -1.5);
+
+          // Dynamic lighting color per chapter
+          if (isDoorOpen) {
+            dirLight.color.setHex(0xfde047);
+            pointLight.color.setHex(0x38bdf8);
+          } else if (activeChapterId === 'chapter-3') {
+            dirLight.color.setHex(0x71717a);
+            pointLight.color.setHex(0x52525b);
+          } else if (activeChapterId === 'chapter-4') {
+            dirLight.color.setHex(0xf59e0b);
+            pointLight.color.setHex(0x38bdf8);
+          } else if (activeChapterId === 'chapter-5') {
+            dirLight.color.setHex(0x38bdf8);
+            pointLight.color.setHex(0xa855f7);
+          } else {
+            dirLight.color.setHex(0x7ec850);
+            pointLight.color.setHex(0x38bdf8);
+          }
+
+          // Voxel choreography across chapters
+          const scatterFactor = (activeChapterId === 'chapter-2' || activeChapterId === 'chapter-3') ? 0.68 : (activeChapterId === 'chapter-5' ? 0.42 : 0.0);
+
+          for (let i = 0; i < voxels.length; i++) {
+            const v = voxels[i];
+            const wave = Math.sin(clock * v.speed + v.phase) * 0.32;
+            const tx = v.homeX * (1 - scatterFactor) + v.scatterX * scatterFactor;
+            const ty = v.homeY * (1 - scatterFactor) + v.scatterY * scatterFactor + wave;
+            const tz = v.homeZ * (1 - scatterFactor) + v.scatterZ * scatterFactor;
+
+            v.mesh.position.x += (tx - v.mesh.position.x) * 0.06;
+            v.mesh.position.y += (ty - v.mesh.position.y) * 0.06;
+            v.mesh.position.z += (tz - v.mesh.position.z) * 0.06;
+
+            if (scatterFactor > 0.2) {
+              v.mesh.rotation.x += isPaused ? 0.0005 : 0.006;
+              v.mesh.rotation.y += isPaused ? 0.0005 : 0.008;
+            } else {
+              v.mesh.rotation.x *= 0.9;
+              v.mesh.rotation.y *= 0.9;
+            }
+          }
+
+          renderer.render(scene, camera);
+          requestAnimationFrame(animate3D);
+        }
+
+        requestAnimationFrame(animate3D);
+      }
+
+      // -------------------------------------------------------------------
+      // 3. INTERACTIVE 3D TILT EFFECT ON LUXURY GLASS CARDS
+      // -------------------------------------------------------------------
+      function init3DTiltCards() {
+        document.querySelectorAll('.tilt-card').forEach(function (card) {
+          card.addEventListener('mousemove', function (e) {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const rotY = ((x / rect.width) - 0.5) * 6;
+            const rotX = ((y / rect.height) - 0.5) * -6;
+            card.style.transform = 'perspective(1000px) rotateX(' + rotX.toFixed(2) + 'deg) rotateY(' + rotY.toFixed(2) + 'deg)';
+          });
+          card.addEventListener('mouseleave', function () {
+            card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+          });
+        });
+      }
+
+      // Minecraft Achievement Toast Popup
+      let achieveTimer = null;
+      function triggerMcAchievement(title, icon) {
+        const popup = document.getElementById('mc-achievement-popup');
+        const titleEl = document.getElementById('mc-achieve-title');
+        const iconEl = document.getElementById('mc-achieve-icon');
+        if (!popup || !titleEl || !iconEl) return;
+        titleEl.textContent = title;
+        iconEl.textContent = icon || '🏆';
+        popup.classList.remove('opacity-0', '-translate-y-4');
+        popup.classList.add('opacity-100', 'translate-y-0');
+        if (achieveTimer) clearTimeout(achieveTimer);
+        achieveTimer = setTimeout(function () {
+          popup.classList.add('opacity-0', '-translate-y-4');
+          popup.classList.remove('opacity-100', 'translate-y-0');
+        }, 3800);
+      }
+
+      let toastTimer = null;
+      function showToast(message, icon) {
+        const banner = document.getElementById('toast-banner');
+        const textEl = document.getElementById('toast-text');
+        const iconEl = document.getElementById('toast-icon');
+        if (!banner || !textEl || !iconEl) return;
+        textEl.textContent = message;
+        iconEl.textContent = icon || '✨';
+        banner.classList.remove('opacity-0', 'translate-y-3');
+        banner.classList.add('opacity-100', 'translate-y-0');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          banner.classList.add('opacity-0', 'translate-y-3');
+          banner.classList.remove('opacity-100', 'translate-y-0');
+        }, 2600);
+      }
+
+      // -------------------------------------------------------------------
+      // 4. CHAPTER I: LOADING TERRAIN ANIMATION & INTERACTIVE VOXEL STRIP
+      // -------------------------------------------------------------------
+      const terrainBarFrames = ['▮▯▯▯', '▮▮▯▯', '▮▮▮▯', '▮▮▮▮', '▮▮▮▯'];
+      let terrainFrameIdx = 2;
+      setInterval(function () {
+        const el = document.getElementById('terrain-bars');
+        if (el) {
+          terrainFrameIdx = (terrainFrameIdx + 1) % terrainBarFrames.length;
+          el.textContent = terrainBarFrames[terrainFrameIdx];
+        }
+      }, 650);
+
+      function renderChapter1Voxels() {
+        const container = document.getElementById('chapter1-voxel-strip');
+        if (!container) return;
+        container.innerHTML = '';
+        const palette = [
+          { bg: '#5c9e31', border: '#7ec850', name: 'Grass' },
+          { bg: '#866043', border: '#5c402b', name: 'Dirt' },
+          { bg: '#737373', border: '#525252', name: 'Stone' }
+        ];
+        const pentatonicNotes = ['D4', 'E4', 'F#4', 'A4', 'B4', 'C#5', 'D5', 'E5'];
+        for (let i = 0; i < 24; i++) {
+          const type = i < 12 ? palette[0] : (i < 20 ? palette[1] : palette[2]);
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'h-6 w-full rounded-sm transition-transform hover:scale-110 focus:outline-none';
+          cell.style.backgroundColor = type.bg;
+          cell.style.borderTop = '3px solid ' + type.border;
+          cell.dataset.state = 'placed';
+          cell.title = type.name + ' Block #' + (i + 1);
+          cell.addEventListener('click', function () {
+            const note = pentatonicNotes[i % pentatonicNotes.length];
+            playFeltPianoNote(note, 0, 1.8, 0.085);
+            if (cell.dataset.state === 'placed') {
+              cell.dataset.state = 'mined';
+              cell.style.backgroundColor = '#18181b';
+              cell.style.borderTop = '1px dashed #3f3f46';
+            } else {
+              cell.dataset.state = 'placed';
+              cell.style.backgroundColor = '#5c9e31';
+              cell.style.borderTop = '3px solid #7ec850';
+            }
+          });
+          container.appendChild(cell);
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // 5. CHAPTER II: 16×16 GRASS BLOCK PIXEL ART CANVAS & HEXINPLAYER.JAVA
+      // -------------------------------------------------------------------
+      const grassCanvas = document.getElementById('grass-block-canvas');
+      const grassGrid = [];
+
+      function initGrassBlockData() {
+        grassGrid.length = 0;
+        const grassColors = ['#5c9e31', '#6ab03c', '#4e8a27', '#78bf47'];
+        const dirtColors = ['#866043', '#735136', '#966d4d', '#63442c'];
+        const grassDepthPerCol = [4, 5, 3, 4, 6, 5, 3, 4, 5, 6, 4, 3, 5, 4, 3, 4];
+
+        for (let r = 0; r < 16; r++) {
+          const row = [];
+          for (let c = 0; c < 16; c++) {
+            if (r < grassDepthPerCol[c]) {
+              row.push(grassColors[(r * 7 + c * 3) % grassColors.length]);
+            } else {
+              row.push(dirtColors[(r * 5 + c * 11) % dirtColors.length]);
+            }
+          }
+          grassGrid.push(row);
+        }
+      }
+
+      function drawGrassBlock() {
+        if (!grassCanvas) return;
+        const ctx = grassCanvas.getContext('2d');
+        const cellSize = 12;
+        ctx.clearRect(0, 0, grassCanvas.width, grassCanvas.height);
+
+        for (let r = 0; r < 16; r++) {
+          for (let c = 0; c < 16; c++) {
+            ctx.fillStyle = grassGrid[r][c];
+            ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+            ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+            ctx.strokeRect(c * cellSize, r * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+
+      if (grassCanvas) {
+        grassCanvas.addEventListener('click', function (e) {
+          const rect = grassCanvas.getBoundingClientRect();
+          const scaleX = grassCanvas.width / rect.width;
+          const scaleY = grassCanvas.height / rect.height;
+          const c = Math.floor(((e.clientX - rect.left) * scaleX) / 12);
+          const r = Math.floor(((e.clientY - rect.top) * scaleY) / 12);
+          if (r >= 0 && r < 16 && c >= 0 && c < 16) {
+            if (grassGrid[r][c] === '#111827') {
+              grassGrid[r][c] = r < 4 ? '#6ab03c' : '#866043';
+              playFeltPianoNote('A4', 0, 1.5, 0.08);
+            } else {
+              grassGrid[r][c] = '#111827';
+              playBlockPop(260);
+            }
+            drawGrassBlock();
+          }
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // 6. CHAPTER VI: BLUE SKY / SUNSET / STARRY MEADOW CANVAS + 3D DOOR
+      // -------------------------------------------------------------------
+      const vistaCanvas = document.getElementById('vista-sky-grass-canvas');
+      let cloudOffset = 0;
+      const fireflies = [];
+      for (let i = 0; i < 22; i++) {
+        fireflies.push({
+          x: Math.random() * 600,
+          y: 100 + Math.random() * 200,
+          vx: (Math.random() - 0.5) * 0.45,
+          vy: (Math.random() - 0.5) * 0.3,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+
+      function drawVistaSkyAndMeadow() {
+        if (!vistaCanvas) return;
+        const rect = vistaCanvas.parentElement.getBoundingClientRect();
+        if (vistaCanvas.width !== Math.floor(rect.width) || vistaCanvas.height !== Math.floor(rect.height)) {
+          vistaCanvas.width = Math.max(320, Math.floor(rect.width));
+          vistaCanvas.height = Math.max(300, Math.floor(rect.height));
+        }
+        const ctx = vistaCanvas.getContext('2d');
+        const w = vistaCanvas.width;
+        const h = vistaCanvas.height;
+
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.72);
+        if (vistaSkyMode === 0) {
+          skyGrad.addColorStop(0, '#1d4ed8');
+          skyGrad.addColorStop(0.55, '#38bdf8');
+          skyGrad.addColorStop(1, '#bae6fd');
+        } else if (vistaSkyMode === 1) {
+          skyGrad.addColorStop(0, '#311042');
+          skyGrad.addColorStop(0.5, '#c2410c');
+          skyGrad.addColorStop(1, '#fde047');
+        } else {
+          skyGrad.addColorStop(0, '#020617');
+          skyGrad.addColorStop(0.6, '#0f172a');
+          skyGrad.addColorStop(1, '#1e293b');
+        }
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        if (vistaSkyMode === 2) {
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(w - 96, 36, 40, 40);
+          ctx.fillStyle = 'rgba(248, 250, 252, 0.2)';
+          ctx.fillRect(w - 104, 28, 56, 56);
+        } else {
+          ctx.fillStyle = vistaSkyMode === 1 ? '#fb923c' : '#fde047';
+          ctx.fillRect(w - 96, 36, 44, 44);
+          ctx.fillStyle = 'rgba(254, 240, 138, 0.35)';
+          ctx.fillRect(w - 104, 28, 60, 60);
+        }
+
+        cloudOffset = (cloudOffset + 0.25) % (w + 180);
+        ctx.fillStyle = vistaSkyMode === 2
+          ? 'rgba(148, 163, 184, 0.35)'
+          : (vistaSkyMode === 1 ? 'rgba(254, 215, 170, 0.85)' : 'rgba(255, 255, 255, 0.92)');
+        const clouds = [
+          { x: (cloudOffset) - 120, y: 48, cw: 88, ch: 22 },
+          { x: ((cloudOffset * 0.7 + 220) % (w + 180)) - 100, y: 86, cw: 112, ch: 26 },
+          { x: ((cloudOffset * 0.5 + 420) % (w + 180)) - 90, y: 38, cw: 72, ch: 18 }
+        ];
+        clouds.forEach(function (cl) {
+          ctx.fillRect(cl.x, cl.y, cl.cw, cl.ch);
+          ctx.fillRect(cl.x + 14, cl.y - 10, cl.cw - 28, 12);
+        });
+
+        const groundY = Math.floor(h * 0.68);
+        const blockSize = 24;
+        for (let x = 0; x < w + blockSize; x += blockSize) {
+          const hillStep = Math.floor(Math.sin(x * 0.015) * 2) * 8;
+          const topY = groundY + hillStep;
+
+          ctx.fillStyle = vistaSkyMode === 2 ? '#3b6e1c' : '#5c9e31';
+          ctx.fillRect(x, topY, blockSize + 1, 14);
+          ctx.fillStyle = vistaSkyMode === 2 ? '#5c9e31' : '#7ec850';
+          ctx.fillRect(x, topY, blockSize + 1, 4);
+
+          ctx.fillStyle = '#866043';
+          ctx.fillRect(x, topY + 14, blockSize + 1, h - topY);
+        }
+
+        fireflies.forEach(function (f) {
+          f.x = (f.x + f.vx + w) % w;
+          f.y += f.vy;
+          if (f.y < 60 || f.y > groundY - 10) f.vy *= -1;
+          f.phase += 0.05;
+          const alpha = 0.4 + Math.sin(f.phase) * 0.4;
+          ctx.fillStyle = 'rgba(253, 224, 71, ' + alpha + ')';
+          ctx.fillRect(f.x, f.y, 4, 4);
+        });
+
+        requestAnimationFrame(drawVistaSkyAndMeadow);
+      }
+
+      const doorEl = document.getElementById('pixel-wooden-door');
+      const doorFrameAssembly = document.getElementById('door-frame-assembly');
+      const doorwayLightRays = document.getElementById('doorway-light-rays');
+      const vistaEl = document.getElementById('open-world-vista');
+      const welcomeBannerEl = document.getElementById('welcome-world-banner');
+      const wallSurroundEl = document.getElementById('door-wall-surround');
+      const sunlightAuraEl = document.getElementById('world-sunlight-aura');
+      const toggleDoorBtnText = document.getElementById('toggle-door-btn-text');
+      const doorHintCaption = document.getElementById('door-hint-caption');
+
+      function setDoorOpenState(open) {
+        isDoorOpen = open;
+        if (!doorEl) return;
+        playDoorOpenSound(isDoorOpen);
+
+        if (isDoorOpen) {
+          if (!bgmPlaying && soundEnabled) {
+            startBgm(0);
+          }
+          doorEl.classList.add('door-is-open');
+          if (doorwayLightRays) doorwayLightRays.classList.remove('opacity-0');
+          if (doorFrameAssembly) {
+            setTimeout(function () {
+              if (isDoorOpen) doorFrameAssembly.classList.add('portal-zoomed-in');
+            }, 350);
+          }
+          if (vistaEl) {
+            vistaEl.classList.remove('opacity-25', 'scale-95');
+            vistaEl.classList.add('opacity-100', 'scale-100');
+          }
+          if (welcomeBannerEl) {
+            welcomeBannerEl.classList.remove('scale-75', 'opacity-0');
+            welcomeBannerEl.classList.add('scale-100', 'opacity-100');
+          }
+          if (wallSurroundEl) {
+            wallSurroundEl.classList.add('opacity-0');
+          }
+          if (sunlightAuraEl) {
+            sunlightAuraEl.classList.remove('opacity-0');
+            sunlightAuraEl.classList.add('opacity-100');
+          }
+          if (toggleDoorBtnText) {
+            toggleDoorBtnText.textContent = '🚪 关上像素木门 (Close Door)';
+          }
+          if (doorHintCaption) {
+            doorHintCaption.textContent = '☀ Welcome to my world! 蓝天草地已全面展开，点击上方按钮可再次合上木门。';
+          }
+          triggerMcAchievement('Welcome to my world.', '🚪');
+          showToast('Welcome to my world. 蓝天草地已加载完毕！', '🌱');
+        } else {
+          doorEl.classList.remove('door-is-open');
+          if (doorwayLightRays) doorwayLightRays.classList.add('opacity-0');
+          if (doorFrameAssembly) {
+            doorFrameAssembly.classList.remove('portal-zoomed-in');
+          }
+          if (vistaEl) {
+            vistaEl.classList.add('opacity-25', 'scale-95');
+            vistaEl.classList.remove('opacity-100', 'scale-100');
+          }
+          if (welcomeBannerEl) {
+            welcomeBannerEl.classList.add('scale-75', 'opacity-0');
+            welcomeBannerEl.classList.remove('scale-100', 'opacity-100');
+          }
+          if (wallSurroundEl) {
+            wallSurroundEl.classList.remove('opacity-0');
+          }
+          if (sunlightAuraEl) {
+            sunlightAuraEl.classList.add('opacity-0');
+            sunlightAuraEl.classList.remove('opacity-100');
+          }
+          if (toggleDoorBtnText) {
+            toggleDoorBtnText.textContent = '🚪 右键 / 点击推开木门';
+          }
+          if (doorHintCaption) {
+            doorHintCaption.textContent = '💡 支持在木门上直接按下鼠标右键（Minecraft 原生交互）或左键点击推开大门。';
+          }
+          showToast('木门已合上，随时等待你的下一次敲门。', '🚪');
+        }
+      }
+
+      function triggerKnockAnimation() {
+        playWoodKnockSound();
+        knockCount++;
+        const badge = document.getElementById('knock-clue-badge');
+        if (badge) badge.textContent = '×' + knockCount;
+        const dots = document.querySelectorAll('.knock-dot');
+        dots.forEach(function (d, idx) {
+          if (idx < knockCount) {
+            d.className = 'knock-dot w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-200 shadow-sm shadow-amber-400 transition-all scale-110';
+          }
+        });
+        const keyStatus = document.getElementById('knock-key-status');
+        const rhythmHint = document.getElementById('knock-rhythm-hint');
+        if (knockCount >= 3) {
+          if (keyStatus) {
+            keyStatus.textContent = '🔑 线索已解锁 (3/3)';
+            keyStatus.className = 'px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40';
+          }
+          if (rhythmHint) {
+            rhythmHint.textContent = '✨ 敲门声已记住！快去第 VI 章推开像素木门吧';
+            rhythmHint.className = 'text-emerald-300';
+          }
+        } else if (keyStatus) {
+          keyStatus.textContent = '收集中 (' + knockCount + '/3)';
+        }
+        if (doorEl && !isDoorOpen) {
+          doorEl.classList.remove('door-knocking');
+          void doorEl.offsetWidth;
+          doorEl.classList.add('door-knocking');
+        }
+      }
+
+      if (doorEl) {
+        doorEl.addEventListener('click', function () {
+          if (!isDoorOpen) playWoodKnockSound();
+          setDoorOpenState(!isDoorOpen);
+        });
+
+        doorEl.addEventListener('contextmenu', function (e) {
+          e.preventDefault();
+          if (!isDoorOpen) playWoodKnockSound();
+          setDoorOpenState(!isDoorOpen);
+        });
+
+        doorEl.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setDoorOpenState(!isDoorOpen);
+          }
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // 7. BUTTON & INTERACTION LISTENERS ACROSS ALL 6 CHAPTERS + BGM
+      // -------------------------------------------------------------------
+      function bindUIControls() {
+        window.addEventListener('mousemove', function (e) {
+          document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
+          document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
+        }, { passive: true });
+
+        // 2010 Old Desktop PC Boot Sequence Handlers
+        const bootOverlay = document.getElementById('retro-pc-boot-overlay');
+        const monitorBox = document.getElementById('old-pc-monitor-box');
+        const powerOnPcBtn = document.getElementById('power-on-pc-btn');
+        const towerPowerBtn = document.getElementById('tower-power-btn');
+        const skipBootBtn = document.getElementById('skip-boot-overlay-btn');
+        const replayBootBtn = document.getElementById('replay-pc-boot-btn');
+        const crtOffView = document.getElementById('crt-screen-off-view');
+        const crtOnView = document.getElementById('crt-screen-on-view');
+        const crtBootBar = document.getElementById('crt-boot-bar');
+        const crtBootText = document.getElementById('crt-boot-progress-text');
+        const crtPowerLed = document.getElementById('crt-power-led');
+        const deskCaption = document.getElementById('desk-boot-caption');
+        let pcBooting = false;
+
+        function playRetroPcBootSound() {
+          const ctx = getAudioContext();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          // 1. Mechanical switch click
+          playBlockPop(180);
+          // 2. CRT degauss hum + BIOS single beep
+          const hum = ctx.createOscillator();
+          const humGain = ctx.createGain();
+          hum.type = 'sawtooth';
+          hum.frequency.setValueAtTime(60, now + 0.05);
+          hum.frequency.linearRampToValueAtTime(110, now + 0.45);
+          humGain.gain.setValueAtTime(0.06, now + 0.05);
+          humGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+          hum.connect(humGain);
+          humGain.connect(ctx.destination);
+          hum.start(now + 0.05);
+          hum.stop(now + 0.56);
+
+          // 3. Classic BIOS POST beep (1000Hz)
+          const beep = ctx.createOscillator();
+          const beepGain = ctx.createGain();
+          beep.type = 'square';
+          beep.frequency.setValueAtTime(980, now + 0.45);
+          beepGain.gain.setValueAtTime(0.05, now + 0.45);
+          beepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.62);
+          beep.connect(beepGain);
+          beepGain.connect(ctx.destination);
+          beep.start(now + 0.45);
+          beep.stop(now + 0.65);
+        }
+
+        function startRetroPcBootSequence() {
+          if (pcBooting) return;
+          pcBooting = true;
+          playRetroPcBootSound();
+          if (!bgmPlaying && soundEnabled) {
+            startBgm(0);
+          }
+          if (crtPowerLed) {
+            crtPowerLed.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow shadow-emerald-400';
+          }
+          if (crtOffView && crtOnView) {
+            crtOffView.classList.add('hidden');
+            crtOnView.classList.remove('hidden');
+            crtOnView.classList.add('crt-turning-on');
+          }
+          if (deskCaption) {
+            deskCaption.textContent = '⚡ 主机风扇已转起 · 正在加载 2010 方块世界 (Loading terrain...▮▮▮▯)';
+          }
+          setTimeout(function () {
+            if (crtBootBar) crtBootBar.style.width = '55%';
+            if (crtBootText) crtBootText.textContent = 'Loading terrain... ▮▮▮▯';
+          }, 350);
+          setTimeout(function () {
+            if (crtBootBar) crtBootBar.style.width = '100%';
+            if (crtBootText) crtBootText.textContent = 'Loading terrain... ▮▮▮▮ OK!';
+          }, 900);
+          setTimeout(function () {
+            if (bootOverlay) {
+              bootOverlay.classList.add('boot-entered');
+            }
+            triggerMcAchievement('2010 旧台式机已点亮!', '🖥️');
+          }, 1450);
+        }
+
+        if (monitorBox) monitorBox.addEventListener('click', startRetroPcBootSequence);
+        if (powerOnPcBtn) {
+          powerOnPcBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            startRetroPcBootSequence();
+          });
+        }
+        if (towerPowerBtn) {
+          towerPowerBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            startRetroPcBootSequence();
+          });
+        }
+        if (skipBootBtn && bootOverlay) {
+          skipBootBtn.addEventListener('click', function () {
+            if (!bgmPlaying && soundEnabled) startBgm(0);
+            bootOverlay.classList.add('boot-entered');
+          });
+        }
+        if (replayBootBtn && bootOverlay) {
+          replayBootBtn.addEventListener('click', function () {
+            pcBooting = false;
+            if (crtOffView && crtOnView) {
+              crtOffView.classList.remove('hidden');
+              crtOnView.classList.add('hidden');
+              crtOnView.classList.remove('crt-turning-on');
+            }
+            if (crtBootBar) crtBootBar.style.width = '0%';
+            if (crtPowerLed) crtPowerLed.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow';
+            if (deskCaption) deskCaption.textContent = '👆 点击上方破台式机的【⏻ POWER】电源键，启动主机进入我的世界';
+            bootOverlay.classList.remove('boot-entered');
+          });
+        }
+
+        // 0-to-1 FDE Engineer Transition Hub Handlers
+        const fdeStageDescriptions = [
+          '> [FDE_BOOTCAMP] 当前阶段 01：哪怕曾按下暂停键，今天开始敲下第一个 Git 小绿格，我带你从 0 到 1 走通 FDE 之路。',
+          '> [FDE_BOOTCAMP] 当前阶段 02：掌握 LLM 编排、RAG 与 Agent 工具链，在 30㎡ 房间里也能搭出企业级智能体。',
+          '> [FDE_BOOTCAMP] 当前阶段 03：FDE 核心竞争力——既懂代码又懂业务痛点，把 AI 真正部署到一线场景中解决实际问题。',
+          '> [FDE_BOOTCAMP] 当前阶段 04：用硬核实战作品集与 180 天绿格子说话，完成从 0 到 1 转行 FDE 工程师的临门一脚！'
+        ];
+        document.querySelectorAll('.fde-stage-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const idx = Number(btn.getAttribute('data-fde-stage')) || 0;
+            document.querySelectorAll('.fde-stage-btn').forEach(function (b) {
+              b.className = 'fde-stage-btn text-left p-4 rounded-2xl bg-zinc-900/75 border border-white/10 hover:border-emerald-400/40 transition-all space-y-1.5';
+            });
+            btn.className = 'fde-stage-btn text-left p-4 rounded-2xl bg-emerald-950/50 border border-emerald-400/50 transition-all space-y-1.5 shadow-lg';
+            const detailEl = document.getElementById('fde-stage-detail');
+            if (detailEl && fdeStageDescriptions[idx]) {
+              detailEl.textContent = fdeStageDescriptions[idx];
+            }
+            const notes = ['C4', 'E4', 'G4', 'C5'];
+            playFeltPianoNote(notes[idx % notes.length], 0, 1.6, 0.08);
+          });
+        });
+
+        const joinFdeBtn = document.getElementById('join-fde-mission-btn');
+        if (joinFdeBtn) {
+          joinFdeBtn.addEventListener('click', function () {
+            if (!isDoorOpen) {
+              setDoorOpenState(true);
+            } else {
+              ['C4', 'E4', 'G4', 'B4', 'C5'].forEach(function (n, i) {
+                playFeltPianoNote(n, i * 0.09, 2.2, 0.085);
+              });
+            }
+            triggerMcAchievement('0→1 转行 FDE 工程师!', '🚀');
+            showToast('Welcome! 让我们一起从 0 到 1 成为 FDE 工程师！', '🚀');
+          });
+        }
+
+        const brandBtn = document.getElementById('brand-home-btn');
+        if (brandBtn) {
+          brandBtn.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
+        const backTopBtn = document.getElementById('back-to-top-btn');
+        if (backTopBtn) {
+          backTopBtn.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
+
+        const startBtn = document.getElementById('start-journey-btn');
+        if (startBtn) {
+          startBtn.addEventListener('click', function () {
+            if (!bgmPlaying) {
+              startBgm(currentTrackIndex);
+              triggerMcAchievement('C418 · Volume Alpha', '🎵');
+            } else {
+              playBlockPop(360);
+            }
+            const ch1 = document.getElementById('chapter-1');
+            if (ch1) ch1.scrollIntoView({ behavior: 'smooth' });
+          });
+        }
+
+        const bgmToggleBtn = document.getElementById('bgm-toggle-btn');
+        if (bgmToggleBtn) {
+          bgmToggleBtn.addEventListener('click', function () {
+            toggleBgm();
+          });
+        }
+
+        const bgmNextBtn = document.getElementById('bgm-next-track-btn');
+        if (bgmNextBtn) {
+          bgmNextBtn.addEventListener('click', function () {
+            const nextIdx = (currentTrackIndex + 1) % MC_TRACKS.length;
+            startBgm(nextIdx);
+            showToast('切换唱片: ' + MC_TRACKS[nextIdx].name, '💿');
+          });
+        }
+
+        const hotbarJukeboxBtn = document.getElementById('hotbar-jukebox-btn');
+        if (hotbarJukeboxBtn) {
+          hotbarJukeboxBtn.addEventListener('click', function () {
+            toggleBgm();
+          });
+        }
+
+        document.querySelectorAll('.bgm-preset-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const idx = Number(btn.getAttribute('data-bgm-track')) || 0;
+            startBgm(idx);
+            showToast('正在播放唱片: ' + MC_TRACKS[idx].name, '🎹');
+          });
+        });
+
+        window.addEventListener('keydown', function (e) {
+          if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+          if (e.key >= '1' && e.key <= '6') {
+            const targetEl = document.getElementById('chapter-' + e.key);
+            if (targetEl) {
+              playBlockPop(340 + Number(e.key) * 30);
+              targetEl.scrollIntoView({ behavior: 'smooth' });
+            }
+          } else if (e.key === 'm' || e.key === 'M') {
+            toggleBgm();
+          }
+        });
+
+        const overviewBtn = document.getElementById('overview-table-btn');
+        const closeStoryboardBtn = document.getElementById('close-storyboard-btn');
+        const drawer = document.getElementById('storyboard-drawer');
+        if (overviewBtn && drawer) {
+          overviewBtn.addEventListener('click', function () {
+            drawer.classList.toggle('hidden');
+            playBlockPop(400);
+          });
+        }
+        if (closeStoryboardBtn && drawer) {
+          closeStoryboardBtn.addEventListener('click', function () {
+            drawer.classList.add('hidden');
+          });
+        }
+
+        document.querySelectorAll('[data-scroll-to]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const targetId = btn.getAttribute('data-scroll-to');
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) {
+              playBlockPop(380);
+              targetEl.scrollIntoView({ behavior: 'smooth' });
+            }
+          });
+        });
+
+        const soundBtn = document.getElementById('sound-toggle-btn');
+        if (soundBtn) {
+          soundBtn.addEventListener('click', function () {
+            soundEnabled = !soundEnabled;
+            if (!soundEnabled && bgmPlaying) {
+              stopBgm();
+            }
+            const icon = document.getElementById('sound-icon');
+            const label = document.getElementById('sound-label');
+            if (icon) icon.textContent = soundEnabled ? '🔊' : '🔇';
+            if (label) label.textContent = soundEnabled ? '音效: 开' : '音效: 关';
+            if (soundEnabled) playBlockPop(440);
+            updateBgmUI();
+            showToast(soundEnabled ? '全局音频已开启' : '全局音频已静音', soundEnabled ? '🔊' : '🔇');
+          });
+        }
+
+        const autoScrollBtn = document.getElementById('autoscroll-toggle-btn');
+        const autoIcon = document.getElementById('autoscroll-icon');
+        const autoLabel = document.getElementById('autoscroll-label');
+
+        function stopAutoScroll() {
+          isAutoScrolling = false;
+          if (autoScrollRaf) cancelAnimationFrame(autoScrollRaf);
+          if (autoIcon) autoIcon.textContent = '▶';
+          if (autoLabel) autoLabel.textContent = '自动放映';
+        }
+
+        function stepAutoScroll() {
+          if (!isAutoScrolling) return;
+          window.scrollBy(0, 1.35);
+          if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 4) {
+            stopAutoScroll();
+            return;
+          }
+          autoScrollRaf = requestAnimationFrame(stepAutoScroll);
+        }
+
+        if (autoScrollBtn) {
+          autoScrollBtn.addEventListener('click', function () {
+            isAutoScrolling = !isAutoScrolling;
+            if (isAutoScrolling) {
+              if (!bgmPlaying && soundEnabled) startBgm(currentTrackIndex);
+              if (autoIcon) autoIcon.textContent = '⏸';
+              if (autoLabel) autoLabel.textContent = '放映中';
+              showToast('开启自动巡礼 + C418 钢琴原声伴奏', '🎬');
+              autoScrollRaf = requestAnimationFrame(stepAutoScroll);
+            } else {
+              stopAutoScroll();
+              showToast('已暂停自动放映', '⏸');
+            }
+          });
+        }
+
+        window.addEventListener('wheel', function () {
+          if (isAutoScrolling) stopAutoScroll();
+        }, { passive: true });
+
+        const regenBtn = document.getElementById('regen-terrain-btn');
+        if (regenBtn) {
+          regenBtn.addEventListener('click', function () {
+            renderChapter1Voxels();
+            playFeltPianoNote('E5', 0, 1.8, 0.085);
+            const statusText = document.getElementById('chunk-status-text');
+            if (statusText) {
+              statusText.textContent = 'Chunk reloaded! Seed #' + Math.floor(1000 + Math.random() * 9000) + ' — 地形在加载，我的人生也是。';
+            }
+            showToast('区块重新生成完毕：Loading terrain...▮▮▮▯', '⛏');
+          });
+        }
+
+        const toggleByteBtn = document.getElementById('toggle-byte-view-btn');
+        const byteOverlay = document.getElementById('byte-overlay-badge');
+        if (toggleByteBtn && byteOverlay) {
+          toggleByteBtn.addEventListener('click', function () {
+            byteViewActive = !byteViewActive;
+            byteOverlay.classList.toggle('hidden', !byteViewActive);
+            playBlockPop(byteViewActive ? 540 : 340);
+          });
+        }
+
+        const resetGrassBtn = document.getElementById('reset-grass-btn');
+        if (resetGrassBtn) {
+          resetGrassBtn.addEventListener('click', function () {
+            initGrassBlockData();
+            drawGrassBlock();
+            playBlockPop(460);
+            showToast('16×16 草方块像素画已复原', '🟩');
+          });
+        }
+
+        const runJavaBtn = document.getElementById('run-java-btn');
+        if (runJavaBtn) {
+          runJavaBtn.addEventListener('click', function () {
+            curiosityValue += 64;
+            playFeltPianoNote('C#5', 0, 1.6, 0.085);
+            const valEl = document.getElementById('java-curiosity-val');
+            const badgeEl = document.getElementById('curiosity-counter-badge');
+            const logEl = document.getElementById('java-console-log');
+            if (valEl) valEl.textContent = String(curiosityValue);
+            if (badgeEl) badgeEl.textContent = 'curiosity = ' + curiosityValue;
+            if (logEl) {
+              logEl.textContent = '> [HexinPlayer] onServerTick() -> curiosity++ (' + curiosityValue + ') | Crafted: Block -> Java Bytecode!';
+            }
+            triggerMcAchievement('curiosity++ (' + curiosityValue + ')', '☕');
+            showToast('HexinPlayer.java: curiosity++ ➔ ' + curiosityValue, '☕');
+          });
+        }
+
+        const unpauseBtn = document.getElementById('unpause-attempt-btn');
+        if (unpauseBtn) {
+          unpauseBtn.addEventListener('click', function () {
+            playFeltPianoNote('A4', 0, 1.8, 0.085);
+            const fill = document.getElementById('paused-timeline-fill');
+            const msg = document.getElementById('unpause-feedback-msg');
+            if (fill) fill.style.width = '100%';
+            if (msg) {
+              msg.textContent = '⚡ 正在唤醒进程... 请继续向下滚动进入「IV · 重生」';
+              msg.classList.add('text-amber-300');
+            }
+            setTimeout(function () {
+              const ch4 = document.getElementById('chapter-4');
+              if (ch4) ch4.scrollIntoView({ behavior: 'smooth' });
+            }, 650);
+          });
+        }
+
+        // Chapter IV: 180-Day Git Block Matrix (30 cols x 6 rows = 180 days)
+        const gitGridEl = document.getElementById('respawn-git-grid');
+        let gitCommitCount = 0;
+        let isPaintingGit = false;
+        const TOTAL_GIT_DAYS = 180;
+        // Emerald, Gold, and Diamond block colors for the 180-day commits
+        const commitBlockPalette = ['#0e4429', '#006d32', '#26a641', '#39d353'];
+
+        window.addEventListener('mouseup', function () {
+          isPaintingGit = false;
+        });
+
+        function getDayMilestoneText(dayNum) {
+          if (dayNum <= 30) return 'Day #' + dayNum + ' · 清空暂停四年的焦躁，从第一道算法题重新敲起';
+          if (dayNum <= 60) return 'Day #' + dayNum + ' · 深夜打磨简历与项目，Git 绿格子连成片';
+          if (dayNum <= 105) return 'Day #' + dayNum + ' · SAP 实习破冰：第一次在工程代码库里合入 PR';
+          if (dayNum <= 150) return 'Day #' + dayNum + ' · 秋招/春招密集复盘，每一次面试都在攒经验值';
+          return 'Day #' + dayNum + ' · 百度 Offer 落地：180 天突围，踏实顺利就业 🎉';
+        }
+
+        function updateGit180ProgressUI() {
+          const lbl = document.getElementById('git-commit-count-label');
+          const pctLabel = document.getElementById('respawn-progress-pct');
+          const bar = document.getElementById('respawn-quest-bar');
+          if (lbl) lbl.textContent = 'Commits: ' + gitCommitCount + ' / ' + TOTAL_GIT_DAYS + ' Days';
+          if (pctLabel) {
+            pctLabel.textContent = gitCommitCount >= TOTAL_GIT_DAYS
+              ? '180 / 180 · 顺利就业!'
+              : (gitCommitCount + ' / 180 DAYS');
+          }
+          if (bar) {
+            const pct = Math.min(100, Math.round((gitCommitCount / TOTAL_GIT_DAYS) * 100));
+            bar.style.width = pct + '%';
+          }
+          if (gitCommitCount === TOTAL_GIT_DAYS) {
+            triggerMcAchievement('180 Days · 顺利就业!', '💎');
+          }
+        }
+
+        function lightSingleGitCell(cell, dayIndex, playSound) {
+          const color = commitBlockPalette[dayIndex % commitBlockPalette.length];
+          if (cell.dataset.lit !== '1') {
+            cell.dataset.lit = '1';
+            gitCommitCount = Math.min(TOTAL_GIT_DAYS, gitCommitCount + 1);
+          }
+          cell.style.backgroundColor = color;
+          cell.style.boxShadow = '0 0 8px ' + color + '66';
+          if (playSound) {
+            const notes = ['C4', 'D4', 'E4', 'G4', 'A4', 'B4', 'C5', 'D5'];
+            playFeltPianoNote(notes[dayIndex % notes.length], 0, 1.3, 0.065);
+          }
+          const hoverLog = document.getElementById('git-hover-day-log');
+          if (hoverLog) hoverLog.textContent = getDayMilestoneText(dayIndex + 1);
+          updateGit180ProgressUI();
+        }
+
+        if (gitGridEl) {
+          for (let i = 0; i < TOTAL_GIT_DAYS; i++) {
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            const initiallyLit = i < 90;
+            if (initiallyLit) gitCommitCount++;
+            cell.dataset.lit = initiallyLit ? '1' : '0';
+            cell.className = 'h-3.5 sm:h-4 w-full rounded-[2px] transition-transform hover:scale-125 focus:outline-none border border-black/30';
+            const initColor = commitBlockPalette[i % commitBlockPalette.length];
+            cell.style.backgroundColor = initiallyLit ? initColor : '#1f2028';
+            cell.title = 'Day #' + (i + 1);
+
+            cell.addEventListener('mousedown', function () {
+              isPaintingGit = true;
+              if (cell.dataset.lit === '1') {
+                cell.dataset.lit = '0';
+                cell.style.backgroundColor = '#1f2028';
+                cell.style.boxShadow = 'none';
+                gitCommitCount = Math.max(0, gitCommitCount - 1);
+                playBlockPop(280);
+                updateGit180ProgressUI();
+              } else {
+                lightSingleGitCell(cell, i, true);
+              }
+            });
+
+            cell.addEventListener('mouseenter', function () {
+              const hoverLog = document.getElementById('git-hover-day-log');
+              if (hoverLog) hoverLog.textContent = getDayMilestoneText(i + 1);
+              if (isPaintingGit && cell.dataset.lit !== '1') {
+                lightSingleGitCell(cell, i, true);
+              }
+            });
+
+            cell.addEventListener('click', function () {
+              const hoverLog = document.getElementById('git-hover-day-log');
+              if (hoverLog) hoverLog.textContent = getDayMilestoneText(i + 1);
+            });
+
+            gitGridEl.appendChild(cell);
+          }
+          updateGit180ProgressUI();
+        }
+
+        function trigger180DaysWave() {
+          if (!gitGridEl) return;
+          const cells = gitGridEl.querySelectorAll('button');
+          cells.forEach(function (c, idx) {
+            setTimeout(function () {
+              const color = commitBlockPalette[idx % commitBlockPalette.length];
+              c.dataset.lit = '1';
+              c.style.backgroundColor = color;
+              c.style.boxShadow = '0 0 8px ' + color + '66';
+              if (idx === TOTAL_GIT_DAYS - 1) {
+                gitCommitCount = TOTAL_GIT_DAYS;
+                updateGit180ProgressUI();
+              }
+            }, Math.floor(idx * 4));
+          });
+          gitCommitCount = TOTAL_GIT_DAYS;
+          updateGit180ProgressUI();
+          ['C4', 'E4', 'G4', 'B4', 'D5'].forEach(function (n, i) {
+            playFeltPianoNote(n, i * 0.1, 2.2, 0.08);
+          });
+          showToast('180 天 Git 方块全部点亮：从 SAP 到百度，踏实顺利就业！', '💎');
+        }
+
+        const lightAllCommitsBtn = document.getElementById('light-all-commits-btn');
+        if (lightAllCommitsBtn) {
+          lightAllCommitsBtn.addEventListener('click', trigger180DaysWave);
+        }
+
+        const respawnAllBtn = document.getElementById('respawn-all-steps-btn');
+        if (respawnAllBtn) {
+          respawnAllBtn.addEventListener('click', trigger180DaysWave);
+        }
+
+        // Chapter IV Interview counter & Offer Envelope Unboxer
+        let interviewCount = 12;
+        const addInterviewBtn = document.getElementById('add-interview-exp-btn');
+        if (addInterviewBtn) {
+          addInterviewBtn.addEventListener('click', function () {
+            interviewCount += 1;
+            const paramEl = document.getElementById('comeback-interview-param');
+            if (paramEl) paramEl.textContent = String(interviewCount);
+            playFeltPianoNote('B4', 0, 1.3, 0.075);
+            showToast('面试复盘 +1 (interviews=' + interviewCount + ')，离顺利就业更近一步！', '📝');
+          });
+        }
+
+        document.querySelectorAll('.offer-envelope-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const msg = btn.getAttribute('data-offer-item');
+            const outEl = document.getElementById('comeback-output');
+            if (outEl && msg) {
+              outEl.textContent = '>>> 拆开信封: ' + msg;
+            }
+            playFeltPianoNote('E5', 0, 1.7, 0.085);
+            showToast('拆开信封：' + msg, '✉️');
+          });
+        });
+
+        const runComebackBtn = document.getElementById('run-comeback-btn');
+        if (runComebackBtn) {
+          runComebackBtn.addEventListener('click', function () {
+            ['D4', 'F#4', 'A4', 'D5'].forEach(function (n, idx) {
+              playFeltPianoNote(n, idx * 0.08, 2.2, 0.08);
+            });
+            const outEl = document.getElementById('comeback-output');
+            if (outEl) {
+              outEl.textContent = '>>> [Offer("SAP"), Offer("Baidu"), Offer("AI_Era"), Offer, ...] 🎉';
+            }
+            triggerMcAchievement('Respawn: [Offer, Offer, ...]', '🚀');
+            showToast('comeback.py 执行成功：返回 [Offer, Offer, ...]', '🚀');
+          });
+        }
+
+        const foreshadowKnockBtn = document.getElementById('foreshadow-knock-btn');
+        if (foreshadowKnockBtn) {
+          foreshadowKnockBtn.addEventListener('click', function () {
+            triggerKnockAnimation();
+            showToast('咚咚！记住了吗？去第 VI 章推开那扇像素木门吧！', '✊');
+          });
+        }
+
+        document.querySelectorAll('.ai-topic-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const topic = btn.getAttribute('data-ai-topic');
+            document.querySelectorAll('.ai-topic-btn').forEach(function (b) {
+              b.className = 'ai-topic-btn text-left p-3 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-sky-500/40 text-xs font-mono-code text-zinc-300 transition-all';
+            });
+            btn.className = 'ai-topic-btn text-left p-3 rounded-xl bg-sky-950/50 border border-sky-400/40 text-xs font-mono-code text-sky-200 transition-all';
+            const statusEl = document.getElementById('ai-room-status');
+            if (statusEl) {
+              statusEl.textContent = '[30㎡ 实时状态] 正在钻研: ' + topic;
+            }
+            playFeltPianoNote('E5', 0, 1.5, 0.075);
+          });
+        });
+
+        const boostAiBtn = document.getElementById('boost-ai-loop-btn');
+        if (boostAiBtn) {
+          boostAiBtn.addEventListener('click', function () {
+            aiEpochs += 128;
+            const epochEl = document.getElementById('ai-epoch-counter');
+            if (epochEl) epochEl.textContent = 'Epochs learned: ' + aiEpochs.toLocaleString();
+            playFeltPianoNote('A5', 0, 1.6, 0.075);
+            showToast('while alive: learn("AI") ➔ Epoch ' + aiEpochs, '🧠');
+          });
+        }
+
+        const cycleSkyBtn = document.getElementById('cycle-sky-time-btn');
+        if (cycleSkyBtn) {
+          cycleSkyBtn.addEventListener('click', function () {
+            vistaSkyMode = (vistaSkyMode + 1) % 3;
+            const badge = document.getElementById('vista-time-badge');
+            const labels = [
+              '☀ CHUNK LOADED · SUNNY MEADOW',
+              '🌅 CHUNK LOADED · GOLDEN SUNSET',
+              '🌌 CHUNK LOADED · STARRY NIGHT'
+            ];
+            if (badge) badge.textContent = labels[vistaSkyMode];
+            playFeltPianoNote('F#5', 0, 1.7, 0.075);
+          });
+        }
+
+        const knockDoorBtn = document.getElementById('knock-door-action-btn');
+        if (knockDoorBtn) {
+          knockDoorBtn.addEventListener('click', function () {
+            triggerKnockAnimation();
+            showToast('咚咚！门内传来了回响，现在推开它吧！', '✊');
+          });
+        }
+
+        const toggleDoorBtn = document.getElementById('toggle-door-action-btn');
+        if (toggleDoorBtn) {
+          toggleDoorBtn.addEventListener('click', function () {
+            if (!isDoorOpen) playWoodKnockSound();
+            setDoorOpenState(!isDoorOpen);
+          });
+        }
+
+        const copyBioBtn = document.getElementById('copy-story-card-btn');
+        if (copyBioBtn) {
+          copyBioBtn.addEventListener('click', function () {
+            const snippet = 'Hexin | 2010 方块世界 -> HexinPlayer.java (curiosity++) -> 暂停四年 (▐▌ paused) -> SAP & 百度 comeback.py [Offer, Offer, ...] -> 30㎡ while alive: learn("AI") | Welcome to my world.';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(snippet).then(function () {
+                showToast('已复制个人故事签名到剪贴板！', '📋');
+              }).catch(function () {
+                fallbackCopy(snippet);
+              });
+            } else {
+              fallbackCopy(snippet);
+            }
+          });
+        }
+      }
+
+      function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('已复制个人故事签名到剪贴板！', '📋');
+        } catch (err) {
+          showToast('复制完成', '✨');
+        }
+        document.body.removeChild(ta);
+      }
+
+      // -------------------------------------------------------------------
+      // 8. SCROLL OBSERVER (REVEAL BEATS + HOTBAR + PAUSED LOW-PASS FILTER)
+      // -------------------------------------------------------------------
+      function initScrollObservers() {
+        const beats = document.querySelectorAll('.story-beat');
+        const beatObserver = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('in-view');
+            }
+          });
+        }, { threshold: 0.14 });
+
+        beats.forEach(function (b) { beatObserver.observe(b); });
+
+        const chapters = document.querySelectorAll('.chapter-section');
+        const badgeEl = document.getElementById('current-chapter-badge');
+        const navBtns = document.querySelectorAll('.chapter-nav-btn');
+        const hotbarSlots = document.querySelectorAll('.mc-hotbar-slot');
+        const xpChapterHint = document.getElementById('mc-xp-chapter-hint');
+
+        const chapterObserver = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              const chTitle = entry.target.getAttribute('data-chapter');
+              const chId = entry.target.id;
+              activeChapterId = chId;
+              if (badgeEl && chTitle) badgeEl.textContent = chTitle;
+              if (xpChapterHint && chTitle) xpChapterHint.textContent = chTitle;
+
+              navBtns.forEach(function (btn) {
+                if (btn.getAttribute('data-scroll-to') === chId) {
+                  btn.className = 'chapter-nav-btn text-xs font-mono-code px-2.5 py-1 rounded-full text-emerald-300 bg-white/10 transition-all';
+                } else {
+                  btn.className = 'chapter-nav-btn text-xs font-mono-code px-2.5 py-1 rounded-full text-zinc-400 hover:text-white transition-all';
+                }
+              });
+
+              hotbarSlots.forEach(function (slot) {
+                if (slot.getAttribute('data-scroll-to') === chId) {
+                  slot.className = 'mc-hotbar-slot group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#3f3f46] border-2 border-emerald-400 flex flex-col items-center justify-center transition-all scale-105';
+                } else {
+                  slot.className = 'mc-hotbar-slot group relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#27272a]/70 hover:bg-[#3f3f46] border border-white/10 flex flex-col items-center justify-center transition-all';
+                }
+              });
+
+              const officialAudioEl = document.getElementById('official-subwoofer-audio');
+              if (chId === 'chapter-3') {
+                document.body.classList.add('chapter-paused-mode');
+                if (officialAudioEl) officialAudioEl.volume = 0.28;
+                if (masterFilter && audioCtx) {
+                  masterFilter.frequency.setTargetAtTime(480, audioCtx.currentTime, 0.45);
+                }
+              } else {
+                document.body.classList.remove('chapter-paused-mode');
+                if (officialAudioEl) officialAudioEl.volume = 0.85;
+                if (masterFilter && audioCtx) {
+                  masterFilter.frequency.setTargetAtTime(3200, audioCtx.currentTime, 0.45);
+                }
+              }
+            }
+          });
+        }, { threshold: 0.32 });
+
+        chapters.forEach(function (c) { chapterObserver.observe(c); });
+
+        window.addEventListener('scroll', function () {
+          const bar = document.getElementById('scroll-progress-bar');
+          const xpFill = document.getElementById('mc-xp-bar-fill');
+          const xpLevel = document.getElementById('mc-xp-level');
+          const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+          const pct = Math.min(100, Math.max(0, (window.scrollY / maxScroll) * 100));
+          if (bar) bar.style.width = pct + '%';
+          if (xpFill) xpFill.style.width = Math.max(8, pct) + '%';
+          if (xpLevel) {
+            const ageLvl = Math.floor(9 + (pct / 100) * 16);
+            xpLevel.textContent = 'LVL ' + ageLvl;
+          }
+        }, { passive: true });
+      }
+
+      // -------------------------------------------------------------------
+      // 9. AMBIENT 2D SPARKLE OVERLAY CANVAS
+      // -------------------------------------------------------------------
+      function initAmbientCanvas() {
+        const canvas = document.getElementById('ambient-bg-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const particles = [];
+
+        function resize() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const mineralColors = [
+          { main: '#38bdf8', shine: '#bae6fd' }, // Diamond Block
+          { main: '#facc15', shine: '#fef08a' }, // Gold Block
+          { main: '#10b981', shine: '#6ee7b7' }  // Emerald Block
+        ];
+        for (let i = 0; i < 36; i++) {
+          const mineral = mineralColors[i % 3];
+          particles.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            size: Math.floor(Math.random() * 5) + 5,
+            vy: -(Math.random() * 0.32 + 0.08),
+            alpha: Math.random() * 0.55 + 0.2,
+            main: mineral.main,
+            shine: mineral.shine
+          });
+        }
+
+        function animateParticles() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const isPaused = document.body.classList.contains('chapter-paused-mode');
+          particles.forEach(function (p) {
+            if (!isPaused) {
+              p.y += p.vy;
+              if (p.y < -12) p.y = canvas.height + 12;
+            }
+            ctx.globalAlpha = isPaused ? p.alpha * 0.35 : p.alpha;
+            ctx.fillStyle = isPaused ? '#71717a' : p.main;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+            ctx.fillStyle = isPaused ? '#a1a1aa' : p.shine;
+            ctx.fillRect(p.x, p.y, Math.max(2, p.size - 2), 2);
+          });
+          ctx.globalAlpha = 1;
+          requestAnimationFrame(animateParticles);
+        }
+        requestAnimationFrame(animateParticles);
+      }
+
+      setInterval(function () {
+        if (!document.body.classList.contains('chapter-paused-mode')) {
+          aiEpochs += 1;
+          const epochEl = document.getElementById('ai-epoch-counter');
+          if (epochEl) epochEl.textContent = 'Epochs learned: ' + aiEpochs.toLocaleString();
+        }
+      }, 2200);
+
+      // -------------------------------------------------------------------
+      // 10. INTERACTIVE 30㎡ ISOMETRIC AI ROOM DIORAMA (Chapter V)
+      // -------------------------------------------------------------------
+      let activeRoomZone = 'desk';
+      function init30m2RoomDiorama() {
+        const canvas = document.getElementById('room-30m2-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let tick = 0;
+
+        const zoneInfo = {
+          desk: {
+            badge: '🖥️ 双联屏升降桌 · 正在跑 Agent & MCP',
+            status: '[30㎡ 实时状态] 升降桌双联屏：左边跑着 Agent 编排，右边写着 FDE 实战教程'
+          },
+          gpu: {
+            badge: '⚡ RTX 算力塔式主机 · 显存满载中',
+            status: '[30㎡ 实时状态] 桌下算力主机：风扇嗡嗡转，正在微调本地推理模型 (VRAM 98%)'
+          },
+          coffee: {
+            badge: '☕ 手冲冰美式角 · 凌晨两点的燃料',
+            status: '[30㎡ 实时状态] 咖啡角：一杯美式配 C418 钢琴曲，在 30㎡ 小窝里安静造东西'
+          },
+          window: {
+            badge: '🌌 落地窗与单人床 · 30㎡ 温馨独居',
+            status: '[30㎡ 实时状态] 窗边与单人床：虽然只有 30㎡，但推开窗就是漫天星光与无限可能'
+          }
+        };
+
+        function setRoomZone(zoneKey, playNote) {
+          activeRoomZone = zoneKey;
+          const info = zoneInfo[zoneKey] || zoneInfo.desk;
+          const badgeEl = document.getElementById('room-zone-badge');
+          const statusEl = document.getElementById('ai-room-status');
+          if (badgeEl) badgeEl.textContent = info.badge;
+          if (statusEl) statusEl.textContent = info.status;
+          if (playNote) {
+            const noteMap = { desk: 'E5', gpu: 'A4', coffee: 'B4', window: 'G4' };
+            playFeltPianoNote(noteMap[zoneKey] || 'E5', 0, 1.4, 0.075);
+          }
+        }
+
+        // Click detection on the 4 interactive zones inside the 30㎡ room canvas
+        canvas.addEventListener('click', function (e) {
+          const rect = canvas.getBoundingClientRect();
+          const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+          const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+          if (x < 175 && y < 145) {
+            setRoomZone('window', true);
+          } else if (x >= 175 && x <= 325 && y < 165) {
+            setRoomZone('desk', true);
+          } else if (x > 325) {
+            setRoomZone('gpu', true);
+          } else {
+            setRoomZone('coffee', true);
+          }
+        });
+
+        // Also sync with the 4 AI topic buttons
+        document.querySelectorAll('.ai-topic-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const z = btn.getAttribute('data-room-zone');
+            if (z) setRoomZone(z, false);
+          });
+        });
+
+        function drawIsoRoom() {
+          tick += 0.04;
+          const w = canvas.width;
+          const h = canvas.height;
+          ctx.clearRect(0, 0, w, h);
+
+          // Subtle blueprint grid background (5m x 6m = 30㎡)
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.07)';
+          ctx.lineWidth = 1;
+          for (let gx = 0; gx < w; gx += 24) {
+            ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+          }
+          for (let gy = 0; gy < h; gy += 24) {
+            ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+          }
+
+          // Isometric Room Floor (30㎡ wooden/slate floor)
+          ctx.fillStyle = '#111827';
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(230, 38);
+          ctx.lineTo(410, 120);
+          ctx.lineTo(230, 206);
+          ctx.lineTo(50, 120);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Left Back Wall & Right Back Wall
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.moveTo(50, 120);
+          ctx.lineTo(230, 38);
+          ctx.lineTo(230, 8);
+          ctx.lineTo(50, 85);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.moveTo(230, 38);
+          ctx.lineTo(410, 120);
+          ctx.lineTo(410, 85);
+          ctx.lineTo(230, 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // ZONE 1: Starry Window & Cozy Single Bed (Left side of 30㎡ room)
+          const winHighlight = activeRoomZone === 'window';
+          ctx.fillStyle = winHighlight ? '#38bdf8' : '#0284c7';
+          ctx.fillRect(88, 52, 54, 34);
+          ctx.fillStyle = '#fde047';
+          ctx.fillRect(128, 58, 6, 6);
+          // Bed
+          ctx.fillStyle = winHighlight ? '#34d399' : '#10b981';
+          ctx.fillRect(82, 108, 68, 34);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(86, 112, 20, 14);
+
+          // ZONE 2: Dual-Monitor Standing Desk (Center-Right of 30㎡ room)
+          const deskHighlight = activeRoomZone === 'desk';
+          // Desk surface
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(195, 86, 110, 42);
+          // Dual glowing monitors
+          const screenGlow = 0.7 + Math.sin(tick * 2) * 0.25;
+          ctx.fillStyle = deskHighlight ? '#38bdf8' : 'rgba(56, 189, 248, ' + screenGlow + ')';
+          ctx.fillRect(206, 56, 42, 26);
+          ctx.fillStyle = deskHighlight ? '#4ade80' : 'rgba(74, 222, 128, ' + screenGlow + ')';
+          ctx.fillRect(254, 56, 42, 26);
+          // Code lines on monitors
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(210, 62, 24, 3);
+          ctx.fillRect(210, 68, 30, 3);
+          ctx.fillRect(258, 62, 28, 3);
+          ctx.fillRect(258, 68, 20, 3);
+
+          // ZONE 3: RTX GPU Tower with pulsing RGB LED (Right corner)
+          const gpuHighlight = activeRoomZone === 'gpu';
+          ctx.fillStyle = gpuHighlight ? '#a855f7' : '#334155';
+          ctx.fillRect(334, 96, 36, 48);
+          ctx.fillStyle = (Math.floor(tick * 3) % 2 === 0) ? '#38bdf8' : '#4ade80';
+          ctx.fillRect(340, 104, 24, 6);
+          ctx.fillRect(340, 116, 24, 6);
+
+          // ZONE 4: Pour-Over Coffee Corner & Rug (Front bottom center)
+          const coffeeHighlight = activeRoomZone === 'coffee';
+          ctx.fillStyle = coffeeHighlight ? '#f59e0b' : '#78350f';
+          ctx.fillRect(162, 148, 48, 28);
+          // Coffee cup + rising steam
+          ctx.fillStyle = '#fef3c7';
+          ctx.fillRect(180, 142, 12, 12);
+          ctx.fillStyle = 'rgba(255,255,255,0.6)';
+          ctx.fillRect(184, 134 - (Math.floor(tick * 4) % 6), 3, 5);
+
+          // Labels inside diorama
+          ctx.font = '10px "JetBrains Mono", monospace';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText('🛏️ Bed & Window', 74, 156);
+          ctx.fillText('🖥️ Dual-Screen AI Desk', 194, 142);
+          ctx.fillText('⚡ GPU', 334, 158);
+          ctx.fillText('☕ Coffee', 164, 190);
+
+          requestAnimationFrame(drawIsoRoom);
+        }
+
+        requestAnimationFrame(drawIsoRoom);
+      }
+
+      // -------------------------------------------------------------------
+      // 11. GLOBAL CHINESE / ENGLISH / BILINGUAL LANGUAGE SWITCHER
+      // -------------------------------------------------------------------
+      let currentLangMode = 'bilingual'; // 'bilingual' -> 'en' -> 'zh'
+      function initLanguageSwitcher() {
+        // Tag English editorial lines & Chinese serif lines automatically for clean switching
+        const pairs = [
+          {
+            sel: '#prologue h1',
+            bilingual: 'Loading Terrain,<br />Loading Life.',
+            zh: '地形在加载，<br />我的人生也是。',
+            en: 'Loading Terrain,<br />Loading Life.'
+          },
+          {
+            sel: '#chapter-1 h2',
+            bilingual: 'In 2010, I was nine.<br /><span class="font-editorial italic font-normal text-amber-200/90">I opened a world made of blocks.</span>',
+            zh: '2010 年，我九岁。<br /><span class="font-serif-cn font-normal text-amber-200/90">第一次推开方块世界的大门。</span>',
+            en: 'In 2010, I was nine.<br /><span class="font-editorial italic font-normal text-amber-200/90">I opened a world made of blocks.</span>'
+          },
+          {
+            sel: '#chapter-2 h2',
+            bilingual: 'Blocks became my ladder<br /><span class="font-editorial italic font-normal text-emerald-300">into the world of Java.</span>',
+            zh: '从搭方块到写字节，<br /><span class="font-serif-cn font-normal text-emerald-300">Minecraft 成了我学 Java 的梯子。</span>',
+            en: 'Blocks became my ladder<br /><span class="font-editorial italic font-normal text-emerald-300">into the world of Java.</span>'
+          },
+          {
+            sel: '#chapter-3 h2',
+            bilingual: 'Then the saturation<br /><span class="font-editorial italic font-normal text-zinc-400">drained from the frame.</span>',
+            zh: '后来的四年，<br /><span class="font-serif-cn font-normal text-zinc-400">画面像是被抽走了所有饱和度。</span>',
+            en: 'Then the saturation<br /><span class="font-editorial italic font-normal text-zinc-400">drained from the frame.</span>'
+          },
+          {
+            sel: '#chapter-4 h2',
+            bilingual: 'Clearing the cache.<br /><span class="font-editorial italic font-normal text-amber-300">Step by step, back to work.</span>',
+            zh: '清空缓存，重头再来。<br /><span class="font-serif-cn font-normal text-amber-300">180 天绿格子，踏实顺利就业。</span>',
+            en: 'Clearing the cache.<br /><span class="font-editorial italic font-normal text-amber-300">180 days of commits, back to work.</span>'
+          },
+          {
+            sel: '#chapter-5 h2',
+            bilingual: '“英雄不提当年勇”',
+            zh: '“英雄不提当年勇” · 30㎡ 玩 AI',
+            en: '"Never mind the old glories — 30㎡ & AI"'
+          },
+          {
+            sel: '#chapter-6 h2',
+            bilingual: 'If my story interests you,<br /><span class="font-editorial italic font-normal text-emerald-300">just knock and open the door.</span>',
+            zh: '如果这段故事让你有共鸣，<br /><span class="font-serif-cn font-normal text-emerald-300">右键（或点击）推开这扇木门吧。</span>',
+            en: 'If my story interests you,<br /><span class="font-editorial italic font-normal text-emerald-300">just knock and open the door.</span>'
+          }
+        ];
+
+        const langBtn = document.getElementById('lang-toggle-btn');
+        const langLabel = document.getElementById('lang-mode-label');
+
+        function applyLanguageMode(mode) {
+          currentLangMode = mode;
+          document.body.setAttribute('data-lang-mode', mode);
+
+          pairs.forEach(function (item) {
+            const el = document.querySelector(item.sel);
+            if (el) {
+              el.innerHTML = item[mode] || item.bilingual;
+            }
+          });
+
+          document.querySelectorAll('[data-i18n-zh]').forEach(function (el) {
+            if (!el.dataset.i18nBilingual) {
+              el.dataset.i18nBilingual = el.textContent;
+            }
+            if (mode === 'en') {
+              el.textContent = el.getAttribute('data-i18n-en') || el.dataset.i18nBilingual;
+            } else if (mode === 'zh') {
+              el.textContent = el.getAttribute('data-i18n-zh') || el.dataset.i18nBilingual;
+            } else {
+              el.textContent = el.dataset.i18nBilingual;
+            }
+          });
+
+          if (langLabel) {
+            const modeText = { bilingual: '双语', zh: '中文', en: 'EN' };
+            langLabel.textContent = modeText[mode] || '中/EN';
+          }
+        }
+
+        if (langBtn) {
+          langBtn.addEventListener('click', function () {
+            const order = ['bilingual', 'zh', 'en'];
+            const next = order[(order.indexOf(currentLangMode) + 1) % order.length];
+            applyLanguageMode(next);
+            playFeltPianoNote('E5', 0, 1.3, 0.075);
+            const names = {
+              bilingual: '已切换为：中英双语电影模式 (Bilingual)',
+              zh: '已切换为：纯中文叙事模式 (中文)',
+              en: 'Switched to: English Mode (EN)'
+            };
+            showToast(names[next], '🌐');
+          });
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', function () {
+        renderChapter1Voxels();
+        initGrassBlockData();
+        drawGrassBlock();
+        bindUIControls();
+        initScrollObservers();
+        initThreeJsWorld();
+        init3DTiltCards();
+        initAmbientCanvas();
+        drawVistaSkyAndMeadow();
+        init30m2RoomDiorama();
+        initLanguageSwitcher();
+        updateBgmUI();
+      });
+    })();
+  </script>
+</body>
+</html>
